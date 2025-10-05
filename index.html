@@ -165,7 +165,7 @@
 
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-       import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp, orderBy, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+       import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp, orderBy, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -384,11 +384,14 @@
                 currentUser = user;
                 isCoach = user.email === COACH_EMAIL;
                 try {
-                    const userQuery = query(collection(db, 'users'), where('uid', '==', user.uid));
-                    const userDoc = await getDocs(userQuery);
-                    if (userDoc.empty) throw new Error("Kullanıcı veritabanında bulunamadı.");
+                    // Doğrudan kullanıcının ID'si ile belgeyi istiyoruz (daha hızlı ve doğru)
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                
+                    if (!userDocSnap.exists()) throw new Error("Kullanıcı veritabanında bulunamadı.");
                     
-                    const userData = userDoc.docs[0].data();
+                    const userData = userDocSnap.data();
+                    
                     document.getElementById('userName').textContent = userData.name;
                     document.getElementById('userEmail').textContent = user.email;
                     document.getElementById('dateInput').valueAsDate = new Date();
@@ -435,4 +438,5 @@
     </script>
 </body>
 </html>
+
 
