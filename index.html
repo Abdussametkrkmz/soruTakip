@@ -281,6 +281,25 @@
             document.getElementById('studentListView').style.display = 'block';
             document.getElementById('studentDetailView').style.display = 'none';
         };
+        // ===== YENİ EKLENECEK FONKSİYON =====
+        window.deleteStudent = async (event, uid, name) => {
+            // Butona tıklayınca arkadaki karta tıklanmasını engelle
+            event.stopPropagation();
+        
+            const confirmation = confirm(`'${name}' adlı öğrenciyi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem öğrencinin tüm verilerini (soru kayıtları dahil) SİLMEZ, sadece öğrenci listesinden kaldırır.`);
+            
+            if (confirmation) {
+                try {
+                    // users koleksiyonundan öğrenci belgesini sil
+                    await deleteDoc(doc(db, 'users', uid));
+                    showAppMessage(`'${name}' adlı öğrenci başarıyla silindi.`, 'success');
+                    loadAllStudents(); // Listeyi yenile
+                } catch (error) {
+                    console.error("Öğrenci silme hatası:", error);
+                    showAppMessage("Öğrenci silinirken bir hata oluştu.", "error");
+                }
+            }
+        };
 
         async function renderEntries(containerId, entriesQuery) {
             const list = document.getElementById(containerId);
@@ -333,13 +352,22 @@
                 const usersSnapshot = await getDocs(usersQuery);
                 if(usersSnapshot.empty) return list.innerHTML = '<p style="text-align:center;color:#999;">Henüz öğrenci yok</p>';
                 
-                const studentCardsHTML = usersSnapshot.docs.map(doc => {
+               const studentCardsHTML = usersSnapshot.docs.map(doc => {
                     const student = { uid: doc.id, ...doc.data() };
                     return `
                         <div class="student-card" onclick="viewStudentDetail('${student.uid}', '${student.name}')">
-                            <div class="student-name">${student.name}</div>
-                            <div style="font-size: 12px; color: #999; margin-bottom: 10px;">${student.email}</div>
-                             <div style="text-align:center;margin-top:15px;color:#667eea;font-size:13px;font-weight:600;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div class="student-name">${student.name}</div>
+                                    <div style="font-size: 12px; color: #999;">${student.email}</div>
+                                </div>
+                                <button 
+                                    class="btn-small btn-danger" 
+                                    onclick="deleteStudent(event, '${student.uid}', '${student.name}')">
+                                    Sil
+                                </button>
+                            </div>
+                            <div style="text-align:center; margin-top:15px; color:#667eea; font-size:13px; font-weight:600;">
                                 Kayıtları görmek için tıklayın →
                             </div>
                         </div>`;
@@ -438,5 +466,6 @@
     </script>
 </body>
 </html>
+
 
 
