@@ -5,104 +5,415 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soru Takip Sistemi</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        h1 { color: #667eea; margin-bottom: 10px; text-align: center; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
-        .auth-section, .app-section { display: none; }
-        .auth-section.active, .app-section.active { display: block; }
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
-        input, select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; transition: border-color 0.3s; }
-        input:focus, select:focus { outline: none; border-color: #667eea; }
-        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
-        button:hover { transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        .btn-secondary { background: #f0f0f0; color: #333; margin-top: 10px; }
-        .btn-danger { background: #ef4444; margin-top: 0; } /* margin-top kaldırıldı */
-        .btn-back { background: #6b7280; margin-bottom: 20px; }
-        .stats-card { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .entry-item { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #e0e0e0; }
-        .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .entry-date { font-weight: 600; color: #333; }
-        .entry-subject { display: inline-block; padding: 4px 12px; background: #667eea; color: white; border-radius: 20px; font-size: 12px; margin-left: 10px; }
-        .btn-small { padding: 5px 12px; font-size: 12px; width: auto; }
-        .entry-stats { display: flex; gap: 15px; font-size: 14px; color: #666; flex-wrap: wrap; }
-        .user-info { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { flex: 1; padding: 12px; background: #f0f0f0; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
-        .tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .chart-container { background: white; padding: 20px; border-radius: 10px; margin-top: 20px; }
-        canvas { max-width: 100%; }
-        .student-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 2px solid #e0e0e0; cursor: pointer; transition: all 0.3s; }
-        .student-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); }
-        .student-name { font-weight: 600; color: #667eea; margin-bottom: 10px; font-size: 18px; }
-        .loading { text-align: center; padding: 20px; color: #666; }
-        .error, .success { padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-        .error { background: #fee; color: #c33; }
-        .success { background: #efe; color: #3c3; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .auth-section, .app-section {
+            display: none;
+        }
+        
+        .auth-section.active, .app-section.active {
+            display: block;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            margin-top: 10px;
+        }
+        
+        .btn-back {
+            background: #6b7280;
+            margin-bottom: 20px;
+        }
+        
+        .stats-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .entry-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .entry-date {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .entry-subject {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .entry-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 5px 12px;
+            font-size: 12px;
+            width: auto;
+        }
+        
+        .entry-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: #666;
+            flex-wrap: wrap;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        canvas {
+            max-width: 100%;
+        }
+        
+        .student-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .student-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .student-name {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .student-detail {
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .subject-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .subject-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Giriş Ekranı -->
         <div class="auth-section active" id="authSection">
             <h1>📚 Soru Takip Sistemi</h1>
             <p class="subtitle">Günlük soru çözüm takibinizi yapın</p>
+            
             <div id="authMessage"></div>
+            
             <div class="input-group">
                 <label>E-posta</label>
                 <input type="email" id="emailInput" placeholder="ornek@email.com">
             </div>
+            
             <div class="input-group">
                 <label>Şifre</label>
                 <input type="password" id="passwordInput" placeholder="En az 6 karakter">
             </div>
+            
             <div class="input-group" id="nameGroup">
                 <label>Ad Soyad</label>
                 <input type="text" id="nameInput" placeholder="Adınız ve soyadınız">
             </div>
-            <button id="signUpButton">Kayıt Ol</button>
-            <button class="btn-secondary" id="signInButton">Giriş Yap</button>
+            
+            <button onclick="signUp()">Kayıt Ol</button>
+            <button class="btn-secondary" onclick="signIn()">Giriş Yap</button>
         </div>
 
+        <!-- Ana Uygulama -->
         <div class="app-section" id="appSection">
             <div class="user-info">
                 <div>
                     <strong id="userName">Kullanıcı</strong>
                     <div style="font-size: 12px; color: #666;" id="userEmail"></div>
                 </div>
-                <button class="btn-small btn-secondary" id="signOutButton">Çıkış</button>
+                <button class="btn-small btn-secondary" onclick="signOut()">Çıkış</button>
             </div>
-            
-            <div id="appMessage" style="margin-bottom: 15px;"></div>
 
+            <!-- ÖĞRENCİ SEKME -->
             <div id="studentTabs" style="display:none;">
                 <div class="tabs">
-                    <button class="tab active" data-tab-target="entry">Veri Gir</button>
-                    <button class="tab" data-tab-target="stats">İstatistikler</button>
-                </div>
-            </div>
-            <div id="coachTabs" style="display:none;">
-                <div class="tabs">
-                    <button class="tab active" data-tab-target="stats">İstatistikler</button>
-                    <button class="tab" data-tab-target="admin">Tüm Öğrenciler</button>
+                    <button class="tab active" onclick="showTab('entry')">Veri Gir</button>
+                    <button class="tab" onclick="showTab('stats')">İstatistikler</button>
                 </div>
             </div>
 
-            <div id="entryTab" style="display:none;">
+            <!-- KOÇ SEKME -->
+            <div id="coachTabs" style="display:none;">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('stats')">İstatistikler</button>
+                    <button class="tab" onclick="showTab('admin')">Tüm Öğrenciler</button>
                 </div>
+            </div>
+
+            <!-- Veri Girişi (Sadece Öğrenci) -->
+            <div id="entryTab" style="display:none;">
+                <div class="input-group">
+                    <label>Ders</label>
+                    <select id="subjectInput">
+                        <option value="">Ders seçin</option>
+                        <option value="Türkçe">Türkçe</option>
+                        <option value="Matematik">Matematik</option>
+                        <option value="Fizik">Fizik</option>
+                        <option value="Kimya">Kimya</option>
+                        <option value="Biyoloji">Biyoloji</option>
+                        <option value="Tarih">Tarih</option>
+                        <option value="Coğrafya">Coğrafya</option>
+                        <option value="Din Kültürü">Din Kültürü</option>
+                        <option value="Felsefe">Felsefe</option>
+                        <option value="Deneme Sınavı">Deneme Sınavı</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Tarih</label>
+                    <input type="date" id="dateInput">
+                </div>
+                
+                <div class="input-group">
+                    <label>Çözülen Soru Sayısı</label>
+                    <input type="number" id="solvedInput" min="0" placeholder="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>Doğru Sayısı</label>
+                    <input type="number" id="correctInput" min="0" placeholder="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>Yanlış Sayısı</label>
+                    <input type="number" id="wrongInput" min="0" placeholder="0">
+                </div>
+                
+                <button onclick="saveEntry()">Kaydet</button>
+                
+                <div class="stats-card" style="margin-top: 30px;">
+                    <h3>Kayıtlarım</h3>
+                    <div id="entriesList" class="loading">Yükleniyor...</div>
+                </div>
+            </div>
+
+            <!-- İstatistikler -->
             <div id="statsTab" style="display:none;">
                 <div id="studentStatsContent"></div>
                 <div id="coachStatsContent"></div>
             </div>
+
+            <!-- Admin: Tüm Öğrenciler -->
             <div id="adminTab" style="display:none;">
                 <div id="studentListView">
                     <h3 style="margin-bottom: 20px;">Tüm Öğrenciler</h3>
                     <div id="allStudentsList" class="loading">Yükleniyor...</div>
                 </div>
+                
                 <div id="studentDetailView" style="display:none;">
-                    <button class="btn-back" id="backToStudentListButton">← Geri Dön</button>
+                    <button class="btn-back" onclick="backToStudentList()">← Geri Dön</button>
                     <h3 id="detailStudentName" style="margin-bottom: 20px;"></h3>
                     <div id="studentDetailContent"></div>
                 </div>
@@ -112,44 +423,617 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script type="module">
-        // Firebase SDK'lerinden gerekli tüm fonksiyonları import et
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp, orderBy, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-
-        // Firebase Yapılandırması
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDz0lFClcTpySHPCZnLEyXWHeQzd9RyH58",
             authDomain: "mcoalogrencikocluk.firebaseapp.com",
             projectId: "mcoalogrencikocluk",
             storageBucket: "mcoalogrencikocluk.firebasestorage.app",
             messagingSenderId: "950814379359",
-            appId: "1:950814379359:web:970b00931d5e0763bdbaea"
+            appId: "1:950814379359:web:970b00931d5e0763bdbaea",
+            measurementId: "G-RV2VYT4D6S"
         };
 
-        // Firebase'i Başlat
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, orderBy, Timestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Global Değişkenler
         let currentUser = null;
         let isCoach = false;
         let chartInstances = {};
         const COACH_EMAIL = "abdussametkrkmz@gmail.com";
-        const SUBJECT_COLORS = { 'Türkçe': '#ef4444', 'Matematik': '#3b82f6', 'Fizik': '#8b5cf6', 'Kimya': '#10b981', 'Biyoloji': '#06b6d4', 'Tarih': '#f59e0b', 'Coğrafya': '#14b8a6', 'Din Kültürü': '#ec4899', 'Felsefe': '#6366f1', 'Deneme Sınavı': '#6b7280' };
 
-        // === YARDIMCI FONKSİYONLAR ===
-        function showAuthMessage(msg, type) {
-            const div = document.getElementById('authMessage');
-            div.innerHTML = `<div class="${type}">${msg}</div>`;
-            setTimeout(() => div.innerHTML = '', 4000);
+        const SUBJECT_COLORS = {
+            'Türkçe': '#ef4444',
+            'Matematik': '#3b82f6',
+            'Fizik': '#8b5cf6',
+            'Kimya': '#10b981',
+            'Biyoloji': '#06b6d4',
+            'Tarih': '#f59e0b',
+            'Coğrafya': '#14b8a6',
+            'Din Kültürü': '#ec4899',
+            'Felsefe': '#6366f1',
+            'Deneme Sınavı': '#6b7280'
+        };
+
+        // Global fonksiyonlar
+        window.signUp = async function() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const name = document.getElementById('nameInput').value;
+            
+            if (!email || !password || !name) {
+                showMessage('Lütfen tüm alanları doldurun', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Şifre en az 6 karakter olmalı', 'error');
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await addDoc(collection(db, 'users'), {
+                    uid: userCredential.user.uid,
+                    email: email,
+                    name: name,
+                    createdAt: Timestamp.now()
+                });
+                showMessage('Kayıt başarılı! Giriş yapılıyor...', 'success');
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    showMessage('Bu e-posta zaten kayıtlı', 'error');
+                } else {
+                    showMessage('Hata: ' + error.message, 'error');
+                }
+            }
+        };
+
+        window.signIn = async function() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                showMessage('Lütfen e-posta ve şifre girin', 'error');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage('Giriş başarılı!', 'success');
+            } catch (error) {
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    showMessage('E-posta veya şifre hatalı', 'error');
+                } else {
+                    showMessage('Hata: ' + error.message, 'error');
+                }
+            }
+        };
+
+        window.signOut = async function() {
+            try {
+                await fbSignOut(auth);
+            } catch (error) {
+                showMessage('Çıkış yapılamadı', 'error');
+            }
+        };
+
+        window.saveEntry = async function() {
+            const subject = document.getElementById('subjectInput').value;
+            const date = document.getElementById('dateInput').value;
+            const solved = parseInt(document.getElementById('solvedInput').value) || 0;
+            const correct = parseInt(document.getElementById('correctInput').value) || 0;
+            const wrong = parseInt(document.getElementById('wrongInput').value) || 0;
+
+            if (!subject) {
+                showMessage('Lütfen ders seçin', 'error');
+                return;
+            }
+
+            if (!date) {
+                showMessage('Lütfen tarih seçin', 'error');
+                return;
+            }
+
+            if (solved === 0) {
+                showMessage('Lütfen çözülen soru sayısını girin', 'error');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'entries'), {
+                    uid: currentUser.uid,
+                    subject: subject,
+                    date: date,
+                    solved: solved,
+                    correct: correct,
+                    wrong: wrong,
+                    createdAt: Timestamp.now()
+                });
+                
+                document.getElementById('subjectInput').value = '';
+                document.getElementById('solvedInput').value = '';
+                document.getElementById('correctInput').value = '';
+                document.getElementById('wrongInput').value = '';
+                
+                showMessage('✅ Kayıt başarıyla eklendi!', 'success');
+                loadEntries();
+            } catch (error) {
+                console.error('Kayıt hatası:', error);
+                showMessage('Kayıt eklenirken hata oluştu: ' + error.message, 'error');
+            }
+        };
+
+        window.deleteEntry = async function(id) {
+            if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+                try {
+                    await deleteDoc(doc(db, 'entries', id));
+                    showMessage('Kayıt silindi', 'success');
+                    if (isCoach) {
+                        // Koç ise öğrenci detay sayfasındaysa yenile
+                        const detailView = document.getElementById('studentDetailView');
+                        if (detailView.style.display !== 'none') {
+                            // Mevcut öğrenciyi tekrar yükle
+                            location.reload();
+                        }
+                    } else {
+                        loadEntries();
+                    }
+                } catch (error) {
+                    showMessage('Silme işlemi başarısız', 'error');
+                }
+            }
+        };
+
+        window.showTab = function(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('entryTab').style.display = 'none';
+            document.getElementById('statsTab').style.display = 'none';
+            document.getElementById('adminTab').style.display = 'none';
+            
+            if (tab === 'entry') {
+                document.getElementById('entryTab').style.display = 'block';
+            } else if (tab === 'stats') {
+                document.getElementById('statsTab').style.display = 'block';
+                if (isCoach) {
+                    loadCoachStats();
+                } else {
+                    loadStudentStats();
+                }
+            } else if (tab === 'admin') {
+                document.getElementById('adminTab').style.display = 'block';
+                document.getElementById('studentListView').style.display = 'block';
+                document.getElementById('studentDetailView').style.display = 'none';
+                loadAllStudents();
+            }
+        };
+
+        window.viewStudentDetail = async function(uid, name) {
+            document.getElementById('studentListView').style.display = 'none';
+            document.getElementById('studentDetailView').style.display = 'block';
+            document.getElementById('detailStudentName').textContent = name + ' - Tüm Kayıtlar';
+            
+            await loadStudentDetailEntries(uid);
+        };
+
+        window.backToStudentList = function() {
+            document.getElementById('studentListView').style.display = 'block';
+            document.getElementById('studentDetailView').style.display = 'none';
+        };
+
+        async function loadEntries() {
+            try {
+                const entriesQuery = query(
+                    collection(db, 'entries'),
+                    where('uid', '==', currentUser.uid)
+                );
+                
+                const snapshot = await getDocs(entriesQuery);
+                const list = document.getElementById('entriesList');
+                
+                if (snapshot.empty) {
+                    list.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Henüz kayıt yok</p>';
+                    return;
+                }
+                
+                // Tarihe göre manuel sıralama
+                const entries = [];
+                snapshot.forEach(docSnap => {
+                    entries.push({ id: docSnap.id, data: docSnap.data() });
+                });
+                
+                entries.sort((a, b) => {
+                    const timeA = a.data.createdAt?.toMillis() || 0;
+                    const timeB = b.data.createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+                
+                list.innerHTML = '';
+                entries.forEach(entry => {
+                    const data = entry.data;
+                    const div = document.createElement('div');
+                    div.className = 'entry-item';
+                    div.innerHTML = `
+                        <div class="entry-header">
+                            <div>
+                                <span class="entry-date">${formatDate(data.date)}</span>
+                                <span class="entry-subject">${data.subject}</span>
+                            </div>
+                            <div class="entry-actions">
+                                <button class="btn-small btn-danger" onclick="deleteEntry('${entry.id}')">Sil</button>
+                            </div>
+                        </div>
+                        <div class="entry-stats">
+                            <span>📝 ${data.solved} soru</span>
+                            <span>✅ ${data.correct} doğru</span>
+                            <span>❌ ${data.wrong} yanlış</span>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Kayıtlar yükleme hatası:', error);
+                const list = document.getElementById('entriesList');
+                list.innerHTML = '<p style="text-align:center;color:#c33;padding:20px;">Veriler yüklenirken hata oluştu. Konsolu kontrol edin.</p>';
+            }
         }
 
-        function showAppMessage(msg, type) {
-            const div = document.getElementById('appMessage');
-            div.innerHTML = `<div class="${type}">${msg}</div>`;
-            setTimeout(() => div.innerHTML = '', 4000);
+        async function loadStudentDetailEntries(uid) {
+            try {
+                const entriesQuery = query(
+                    collection(db, 'entries'),
+                    where('uid', '==', uid)
+                );
+                
+                const snapshot = await getDocs(entriesQuery);
+                const container = document.getElementById('studentDetailContent');
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Henüz kayıt yok</p>';
+                    return;
+                }
+                
+                // Tarihe göre manuel sıralama
+                const entries = [];
+                snapshot.forEach(docSnap => {
+                    entries.push({ id: docSnap.id, data: docSnap.data() });
+                });
+                
+                entries.sort((a, b) => {
+                    const timeA = a.data.createdAt?.toMillis() || 0;
+                    const timeB = b.data.createdAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+                
+                container.innerHTML = '';
+                entries.forEach(entry => {
+                    const data = entry.data;
+                    const div = document.createElement('div');
+                    div.className = 'entry-item';
+                    div.innerHTML = `
+                        <div class="entry-header">
+                            <div>
+                                <span class="entry-date">${formatDate(data.date)}</span>
+                                <span class="entry-subject">${data.subject}</span>
+                            </div>
+                        </div>
+                        <div class="entry-stats">
+                            <span>📝 ${data.solved} soru</span>
+                            <span>✅ ${data.correct} doğru</span>
+                            <span>❌ ${data.wrong} yanlış</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Öğrenci kayıtları yükleme hatası:', error);
+                const container = document.getElementById('studentDetailContent');
+                container.innerHTML = '<p style="text-align:center;color:#c33;padding:20px;">Veriler yüklenirken hata oluştu. Konsolu kontrol edin.</p>';
+            }
+        }
+
+        async function loadStudentStats() {
+            try {
+                const container = document.getElementById('studentStatsContent');
+                container.innerHTML = '<h3>Son 7 Gün - Ders Bazlı İstatistikler</h3>';
+                
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                
+                const entriesQuery = query(
+                    collection(db, 'entries'),
+                    where('uid', '==', currentUser.uid),
+                    where('date', '>=', weekAgoStr)
+                );
+                
+                const snapshot = await getDocs(entriesQuery);
+                const subjectData = {};
+                
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!subjectData[data.subject]) {
+                        subjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
+                    }
+                    subjectData[data.subject].solved += data.solved;
+                    subjectData[data.subject].correct += data.correct;
+                    subjectData[data.subject].wrong += data.wrong;
+                });
+                
+                if (Object.keys(subjectData).length === 0) {
+                    container.innerHTML += '<p style="text-align:center;color:#999;padding:20px;">Son 7 günde veri yok</p>';
+                    return;
+                }
+                
+                createStudentChart(subjectData, 'studentChart', container);
+            } catch (error) {
+                console.error('İstatistik yükleme hatası:', error);
+                const container = document.getElementById('studentStatsContent');
+                container.innerHTML = '<p style="text-align:center;color:#c33;padding:20px;">İstatistikler yüklenirken hata oluştu. Konsolu kontrol edin.</p>';
+            }
+        }
+
+        function createStudentChart(subjectData, canvasId, container) {
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'chart-container';
+            chartDiv.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+            container.appendChild(chartDiv);
+
+            const subjects = Object.keys(subjectData);
+            const solvedData = subjects.map(s => subjectData[s].solved);
+            const correctData = subjects.map(s => subjectData[s].correct);
+            const wrongData = subjects.map(s => subjectData[s].wrong);
+
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+
+            const ctx = document.getElementById(canvasId);
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: subjects,
+                    datasets: [
+                        {
+                            label: 'Toplam Soru',
+                            data: solvedData,
+                            backgroundColor: subjects.map(s => SUBJECT_COLORS[s] || '#667eea')
+                        },
+                        {
+                            label: 'Doğru',
+                            data: correctData,
+                            backgroundColor: '#10b981'
+                        },
+                        {
+                            label: 'Yanlış',
+                            data: wrongData,
+                            backgroundColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadCoachStats() {
+            try {
+                const container = document.getElementById('coachStatsContent');
+                container.innerHTML = '<h3 style="margin-bottom:20px;">Tüm Öğrenciler - Son 7 Gün İstatistikleri</h3>';
+
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                const students = [];
+
+                for (const userDoc of usersSnapshot.docs) {
+                    const userData = userDoc.data();
+                    if (userData.email !== COACH_EMAIL) {
+                        students.push({
+                            uid: userData.uid,
+                            name: userData.name
+                        });
+                    }
+                }
+
+                if (students.length === 0) {
+                    container.innerHTML += '<p style="text-align:center;color:#999;padding:20px;">Henüz öğrenci yok</p>';
+                    return;
+                }
+
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+                for (const student of students) {
+                    const entriesQuery = query(
+                        collection(db, 'entries'),
+                        where('uid', '==', student.uid),
+                        where('date', '>=', weekAgoStr)
+                    );
+
+                    const snapshot = await getDocs(entriesQuery);
+                    const subjectData = {};
+
+                    snapshot.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (!subjectData[data.subject]) {
+                            subjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
+                        }
+                        subjectData[data.subject].solved += data.solved;
+                        subjectData[data.subject].correct += data.correct;
+                        subjectData[data.subject].wrong += data.wrong;
+                    });
+
+                    const studentCard = document.createElement('div');
+                    studentCard.className = 'stats-card';
+                    studentCard.innerHTML = `<h4 style="color:#667eea;margin-bottom:15px;">${student.name}</h4>`;
+                    container.appendChild(studentCard);
+
+                    if (Object.keys(subjectData).length === 0) {
+                        studentCard.innerHTML += '<p style="color:#999;text-align:center;">Bu öğrenci son 7 günde veri girmemiş</p>';
+                    } else {
+                        const chartId = 'coachChart_' + student.uid.replace(/[^a-zA-Z0-9]/g, '_');
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'chart-container';
+                        chartDiv.innerHTML = `<canvas id="${chartId}"></canvas>`;
+                        container.appendChild(chartDiv);
+
+                        const subjects = Object.keys(subjectData);
+                        const solvedData = subjects.map(s => subjectData[s].solved);
+                        const correctData = subjects.map(s => subjectData[s].correct);
+                        const wrongData = subjects.map(s => subjectData[s].wrong);
+
+                        if (chartInstances[chartId]) {
+                            chartInstances[chartId].destroy();
+                        }
+
+                        setTimeout(() => {
+                            const ctx = document.getElementById(chartId);
+                            if (ctx) {
+                                chartInstances[chartId] = new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: subjects,
+                                        datasets: [
+                                            {
+                                                label: 'Toplam Soru',
+                                                data: solvedData,
+                                                backgroundColor: subjects.map(s => SUBJECT_COLORS[s] || '#667eea')
+                                            },
+                                            {
+                                                label: 'Doğru',
+                                                data: correctData,
+                                                backgroundColor: '#10b981'
+                                            },
+                                            {
+                                                label: 'Yanlış',
+                                                data: wrongData,
+                                                backgroundColor: '#ef4444'
+                                            }
+                                        ]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        plugins: {
+                                            legend: {
+                                                position: 'bottom'
+                                            }
+                                        },
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+            } catch (error) {
+                console.error('Koç istatistikleri yükleme hatası:', error);
+                const container = document.getElementById('coachStatsContent');
+                container.innerHTML = '<p style="text-align:center;color:#c33;padding:20px;">İstatistikler yüklenirken hata oluştu. Konsolu kontrol edin.</p>';
+            }
+        }
+
+        async function loadAllStudents() {
+            try {
+                const list = document.getElementById('allStudentsList');
+                list.innerHTML = '<div class="loading">Öğrenci verileri yükleniyor...</div>';
+
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                const entriesSnapshot = await getDocs(collection(db, 'entries'));
+                
+                const studentData = {};
+                
+                usersSnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.email !== COACH_EMAIL) {
+                        studentData[data.uid] = {
+                            name: data.name,
+                            email: data.email,
+                            total: 0,
+                            correct: 0,
+                            wrong: 0,
+                            subjects: {}
+                        };
+                    }
+                });
+                
+                entriesSnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (studentData[data.uid]) {
+                        studentData[data.uid].total += data.solved;
+                        studentData[data.uid].correct += data.correct;
+                        studentData[data.uid].wrong += data.wrong;
+                        
+                        if (!studentData[data.uid].subjects[data.subject]) {
+                            studentData[data.uid].subjects[data.subject] = 0;
+                        }
+                        studentData[data.uid].subjects[data.subject] += data.solved;
+                    }
+                });
+                
+                list.innerHTML = '';
+                
+                const students = Object.entries(studentData);
+                if (students.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Henüz öğrenci yok</p>';
+                    return;
+                }
+                
+                students.forEach(([uid, student]) => {
+                    const accuracy = student.total > 0 ? 
+                        Math.round((student.correct / student.total) * 100) : 0;
+                    
+                    const subjectBadges = Object.entries(student.subjects)
+                        .map(([subject, count]) => {
+                            const color = SUBJECT_COLORS[subject] || '#667eea';
+                            return `<span class="subject-badge" style="background:${color};color:white;">${subject}: ${count}</span>`;
+                        }).join('');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'student-card';
+                    div.onclick = () => viewStudentDetail(uid, student.name);
+                    div.innerHTML = `
+                        <div class="student-name">${student.name}</div>
+                        <div style="font-size: 12px; color: #999; margin-bottom: 10px;">${student.email}</div>
+                        <div class="entry-stats" style="margin-bottom:10px;">
+                            <span>📝 ${student.total} soru</span>
+                            <span>✅ ${student.correct} doğru</span>
+                            <span>❌ ${student.wrong} yanlış</span>
+                            <span>📊 ${accuracy}% başarı</span>
+                        </div>
+                        ${subjectBadges ? '<div class="subject-colors">' + subjectBadges + '</div>' : ''}
+                        <div style="text-align:center;margin-top:15px;color:#667eea;font-size:13px;font-weight:600;">
+                            Tıklayarak tüm kayıtları görün →
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Öğrenci verileri yükleme hatası:', error);
+                const list = document.getElementById('allStudentsList');
+                list.innerHTML = '<p style="text-align:center;color:#c33;padding:20px;">Veriler yüklenirken hata oluştu</p>';
+            }
         }
 
         function formatDate(dateStr) {
@@ -157,145 +1041,57 @@
             return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
         }
 
-        // === KİMLİK DOĞRULAMA FONKSİYONLARI ===
-        const signUp = async () => { /* ... Önceki cevaplardaki gibi ... */ };
-        const signIn = async () => { /* ... Önceki cevaplardaki gibi ... */ };
-        const signOut = () => fbSignOut(auth).catch(() => showAuthMessage('Çıkış yapılamadı', 'error'));
-
-        // === VERİ İŞLEM FONKSİYONLARI ===
-        const saveEntry = async () => { /* ... Önceki cevaplardaki gibi ... */ };
-        window.deleteEntry = async (id) => { /* ... Önceki cevaplardaki gibi ... */ };
-        window.deleteStudent = async (event, uid, name) => { /* ... Önceki cevaplardaki gibi ... */ };
-
-        // === ARAYÜZ ve NAVİGASYON ===
-        const showTab = (tab) => { /* ... Önceki cevaplardaki gibi ... */ };
-        window.viewStudentDetail = (uid, name) => { /* ... Önceki cevaplardaki gibi ... */ };
-        window.backToStudentList = () => { /* ... Önceki cevaplardaki gibi ... */ };
-
-        // === VERİ YÜKLEME FONKSİYONLARI ===
-        async function renderEntries(containerId, entriesQuery) { /* ... */ }
-        const loadEntries = () => { /* ... */ };
-        const loadStudentDetailEntries = (uid) => { /* ... */ };
-        async function loadAllStudents() { /* ... */ }
-        
-        // === İSTATİSTİK FONKSİYONLARI (TAM VE ÇALIŞAN HALİ) ===
-        async function loadStudentStats() {
-            try {
-                const container = document.getElementById('studentStatsContent');
-                container.innerHTML = '<h3>Son 7 Gün - Ders Bazlı İstatistikler</h3>';
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                const weekAgoStr = weekAgo.toISOString().split('T')[0];
-                const entriesQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid), where('date', '>=', weekAgoStr));
-                const snapshot = await getDocs(entriesQuery);
-                const subjectData = {};
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (!subjectData[data.subject]) subjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
-                    subjectData[data.subject].solved += data.solved;
-                    subjectData[data.subject].correct += data.correct;
-                    subjectData[data.subject].wrong += data.wrong;
-                });
-                if (Object.keys(subjectData).length === 0) {
-                    container.innerHTML += '<p style="text-align:center;color:#999;padding:20px;">Son 7 günde veri yok</p>';
-                    return;
-                }
-                createStudentChart(subjectData, 'studentChart', container);
-            } catch (error) {
-                console.error('Öğrenci istatistik yükleme hatası:', error);
-                document.getElementById('studentStatsContent').innerHTML = '<p style="text-align:center;color:#c33;">İstatistikler yüklenirken hata oluştu.</p>';
-            }
+        function showMessage(msg, type) {
+            const div = document.getElementById('authMessage');
+            div.className = type;
+            div.textContent = msg;
+            setTimeout(() => div.textContent = '', 4000);
         }
-        async function loadCoachStats() {
-            try {
-                const container = document.getElementById('coachStatsContent');
-                container.innerHTML = '<h3 style="margin-bottom:20px;">Tüm Öğrenciler - Son 7 Gün İstatistikleri</h3>';
-                const usersQuery = query(collection(db, 'users'), where('email', '!=', COACH_EMAIL));
-                const usersSnapshot = await getDocs(usersQuery);
-                if (usersSnapshot.empty) {
-                    container.innerHTML += '<p style="text-align:center;color:#999;">Henüz öğrenci yok</p>';
-                    return;
-                }
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                const weekAgoStr = weekAgo.toISOString().split('T')[0];
-                for (const userDoc of usersSnapshot.docs) {
-                    const student = { uid: userDoc.id, ...userDoc.data() };
-                    const entriesQuery = query(collection(db, 'entries'), where('uid', '==', student.uid), where('date', '>=', weekAgoStr));
-                    const snapshot = await getDocs(entriesQuery);
-                    const subjectData = {};
-                    snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        if (!subjectData[data.subject]) subjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
-                        subjectData[data.subject].solved += data.solved;
-                        subjectData[data.subject].correct += data.correct;
-                        subjectData[data.subject].wrong += data.wrong;
-                    });
-                    const studentCard = document.createElement('div');
-                    studentCard.className = 'stats-card';
-                    studentCard.innerHTML = `<h4 style="color:#667eea;margin-bottom:15px;">${student.name}</h4>`;
-                    if (Object.keys(subjectData).length === 0) {
-                        studentCard.innerHTML += '<p style="color:#999;text-align:center;">Bu öğrenci son 7 günde veri girmemiş</p>';
-                    } else {
-                        const chartId = 'coachChart_' + student.uid;
-                        createStudentChart(subjectData, chartId, studentCard);
-                    }
-                    container.appendChild(studentCard);
-                }
-            } catch (error) {
-                console.error('Koç istatistikleri yükleme hatası:', error);
-                document.getElementById('coachStatsContent').innerHTML = '<p style="text-align:center;color:#c33;">İstatistikler yüklenirken hata oluştu.</p>';
-            }
-        }
-        function createStudentChart(subjectData, canvasId, container) {
-            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
-            const existingCanvas = document.getElementById(canvasId);
-            if(existingCanvas) existingCanvas.parentElement.remove();
-            const chartDiv = document.createElement('div');
-            chartDiv.className = 'chart-container';
-            chartDiv.innerHTML = `<canvas id="${canvasId}"></canvas>`;
-            container.appendChild(chartDiv);
-            const subjects = Object.keys(subjectData);
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            chartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: subjects,
-                    datasets: [
-                        { label: 'Toplam Soru', data: subjects.map(s => subjectData[s].solved), backgroundColor: subjects.map(s => SUBJECT_COLORS[s] || '#6b7280') },
-                        { label: 'Doğru', data: subjects.map(s => subjectData[s].correct), backgroundColor: '#10b981' },
-                        { label: 'Yanlış', data: subjects.map(s => subjectData[s].wrong), backgroundColor: '#ef4444' }
-                    ]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
-            });
-        }
-        
-        // === ANA OTURUM KONTROLÜ ===
+
+        // Auth durumu takibi
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 isCoach = user.email === COACH_EMAIL;
+                
                 try {
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (!userDocSnap.exists()) throw new Error("Kullanıcı veritabanında bulunamadı.");
-                    const userData = userDocSnap.data();
+                    const userQuery = query(collection(db, 'users'), where('uid', '==', user.uid));
+                    const userDoc = await getDocs(userQuery);
+                    
+                    if (userDoc.empty) {
+                        showMessage('Kullanıcı bilgisi bulunamadı', 'error');
+                        await fbSignOut(auth);
+                        return;
+                    }
+                    
+                    const userData = userDoc.docs[0].data();
+                    
                     document.getElementById('userName').textContent = userData.name;
                     document.getElementById('userEmail').textContent = user.email;
-                    document.getElementById('studentTabs').style.display = isCoach ? 'none' : 'block';
-                    document.getElementById('coachTabs').style.display = isCoach ? 'block' : 'none';
+                    document.getElementById('dateInput').valueAsDate = new Date();
+                    
+                    // Sekmeleri ayarla
                     if (isCoach) {
-                        showTab('stats');
+                        document.getElementById('studentTabs').style.display = 'none';
+                        document.getElementById('coachTabs').style.display = 'block';
+                        document.getElementById('statsTab').style.display = 'block';
+                        document.getElementById('studentStatsContent').style.display = 'none';
+                        document.getElementById('coachStatsContent').style.display = 'block';
+                        loadCoachStats();
                     } else {
-                        showTab('entry');
+                        document.getElementById('studentTabs').style.display = 'block';
+                        document.getElementById('coachTabs').style.display = 'none';
+                        document.getElementById('entryTab').style.display = 'block';
+                        document.getElementById('studentStatsContent').style.display = 'block';
+                        document.getElementById('coachStatsContent').style.display = 'none';
                         loadEntries();
                     }
+                    
                     document.getElementById('authSection').classList.remove('active');
                     document.getElementById('appSection').classList.add('active');
                 } catch (error) {
                     console.error('Kullanıcı yükleme hatası:', error);
-                    showAuthMessage('Oturum açılırken bir hata oluştu, lütfen tekrar giriş yapın', 'error');
+                    showMessage('Bir hata oluştu, lütfen tekrar giriş yapın', 'error');
                     await fbSignOut(auth);
                 }
             } else {
@@ -305,36 +1101,6 @@
                 document.getElementById('appSection').classList.remove('active');
             }
         });
-        
-        // === EVENT LISTENERS (Sayfa Yüklendiğinde Çalışır) ===
-        document.addEventListener('DOMContentLoaded', () => {
-            // ... (Butonlara event listener atamaları)
-        });
-
     </script>
 </body>
 </html>
-Önemli Not: Firestore Güvenlik Kuralları
-Bu kodun hatasız çalışması için, Firestore veritabanınızdaki Kurallar sekmesinde aşağıdaki kuralların kayıtlı olduğundan emin olun. Bu, en son konuştuğumuz ve tüm yetkileri (koçun silme yetkisi vb.) doğru şekilde ayarlayan versiyondur.
-
-JavaScript
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // "users" Koleksiyonu Kuralları
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId || request.auth.token.email == "abdussametkrkmz@gmail.com";
-      allow create, update: if request.auth.uid == userId;
-      allow delete: if request.auth.token.email == "abdussametkrkmz@gmail.com";
-    }
-
-    // "entries" Koleksiyonu Kuralları
-    match /entries/{entryId} {
-      allow read: if resource.data.uid == request.auth.uid || request.auth.token.email == "abdussametkrkmz@gmail.com";
-      allow create: if request.resource.data.uid == request.auth.uid;
-      allow update, delete: if resource.data.uid == request.auth.uid || request.auth.token.email == "abdussametkrkmz@gmail.com";
-    }
-  }
-}
