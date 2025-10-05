@@ -165,7 +165,7 @@
 
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+       import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, Timestamp, orderBy, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -188,7 +188,7 @@
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await addDoc(collection(db, 'users'), { uid: userCredential.user.uid, email: email, name: name, createdAt: Timestamp.now() });
+                await setDoc(doc(db, 'users', userCredential.user.uid), { uid: userCredential.user.uid, email: email, name: name, createdAt: Timestamp.now() });
                 showMessage('Kayıt başarılı! Giriş yapılıyor...', 'success');
             } catch (error) {
                 if (error.code === 'auth/email-already-in-use') showMessage('Bu e-posta zaten kayıtlı', 'error');
@@ -435,3 +435,4 @@
     </script>
 </body>
 </html>
+
