@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -155,7 +156,7 @@
             appId: "1:950814379359:web:970b00931d5e0763bdbaea"
         };
 
-        // Firebase Servislerini Başlatma
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -166,7 +167,7 @@
         let chartInstance = null;
         const ADMIN_EMAIL = "abdussametkrkmz@gmail.com";
 
-        // DOM Elementleri
+        
         const authSection = document.getElementById('authSection');
         const appSection = document.getElementById('appSection');
         const emailInput = document.getElementById('emailInput');
@@ -181,7 +182,7 @@
         const tabsContainer = document.getElementById('tabsContainer');
         const contentContainer = document.getElementById('contentContainer');
 
-        // Olay Dinleyicileri
+        
         signUpBtn.addEventListener('click', handleSignUp);
         signInBtn.addEventListener('click', handleSignIn);
         toggleModeBtn.addEventListener('click', toggleAuthMode);
@@ -315,6 +316,7 @@
             tabsContainer.innerHTML = `
                 <div class="tabs">
                     <button class="tab active" data-tab="mystudents">Öğrencilerim</button>
+                    <button class="tab" data-tab="mystats">Haftalık İstatistikler</button>
                     <button class="tab" data-tab="allcoaches">Tüm Koçlar</button>
                     <button class="tab" data-tab="pending">Onay Bekleyenler</button>
                 </div>`;
@@ -325,6 +327,7 @@
         async function showAdminTab(tabName) {
             contentContainer.innerHTML = '<div class="loading">Yükleniyor...</div>';
             if (tabName === 'mystudents') await loadMyStudents();
+            else if (tabName === 'mystats') await loadCoachStats(currentUser.uid, contentContainer);
             else if (tabName === 'allcoaches') await window.loadAllCoaches();
             else if (tabName === 'pending') await loadPendingCoaches();
         }
@@ -344,7 +347,7 @@
             else if (tabName === 'mystats') await loadCoachStats(currentUser.uid, contentContainer);
         }
 
-// --- BU ÖĞRENCİ FONKSİYONLARINI GÜNCELLEYİN ---
+
 
         function loadStudentInterface() {
             tabsContainer.innerHTML = `<div class="tabs"><button class="tab active" data-tab="entry">Veri Gir</button><button class="tab" data-tab="mystats">İstatistiklerim</button></div>`;
@@ -432,13 +435,19 @@
 
         async function loadMyStats() {
             contentContainer.innerHTML = '<h3>İstatistiklerim</h3><div class="loading">Yükleniyor...</div>';
-            const entriesQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid));
-            const snapshot = await getDocs(entriesQuery);
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+            const weeklyQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid), where('date', '>=', sevenDaysAgoStr));
+            const weeklySnapshot = await getDocs(weeklyQuery);
+            const allQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid));
+            const allSnapshot = await getDocs(allQuery);
 
             let total = 0, correct = 0, wrong = 0;
             const subjectData = {};
+            const weeklySubjectData = {};
 
-            snapshot.forEach(doc => {
+            allSnapshot.forEach(doc => {
                 const data = doc.data();
                 total += data.solved || 0;
                 correct += data.correct || 0;
@@ -447,11 +456,52 @@
                 subjectData[data.subject].solved += data.solved;
             });
 
+            weeklySnapshot.forEach(doc => {
+                const data = doc.data();
+                if (!weeklySubjectData[data.subject]) {
+                    weeklySubjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
+                }
+                weeklySubjectData[data.subject].solved += data.solved;
+                weeklySubjectData[data.subject].correct += data.correct;
+                weeklySubjectData[data.subject].wrong += data.wrong;
+            });
+
+            const previousStats = await getPreviousWeekStats(currentUser.uid);
+            let weeklyHtml = '';
+            for (const subject in weeklySubjectData) {
+                const stats = weeklySubjectData[subject];
+                const successRate = stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0;
+                const prevRate = previousStats[subject] || 0;
+                const improvement = successRate - prevRate;
+                let improvementText = '';
+                if (prevRate > 0) {
+                    if (improvement > 0) {
+                        improvementText = `<div style="color: #10b981; font-size: 13px; margin-top: 5px;">🎉 Harika! Geçen haftaya göre %${improvement} daha iyi! Devam et!</div>`;
+                    } else if (improvement < 0) {
+                        improvementText = `<div style="color: #f59e0b; font-size: 13px; margin-top: 5px;">💪 Geçen haftaya göre %${Math.abs(improvement)} düşüş. Biraz daha çaba göster, başarabilirsin!</div>`;
+                    } else {
+                        improvementText = `<div style="color: #3b82f6; font-size: 13px; margin-top: 5px;">🎯 Stabil performans! Bir sonraki hafta daha iyisini yapabilirsin!</div>`;
+                    }
+                }
+                weeklyHtml += `
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                        <strong style="color: #667eea;">${subject}</strong>
+                        <div class="stats-info" style="margin-top: 5px;">
+                            <span>📝 Soru: ${stats.solved}</span>
+                            <span>✅ Doğru: ${stats.correct}</span>
+                            <span>❌ Yanlış: ${stats.wrong}</span>
+                            <span>🎯 Başarı: %${successRate}</span>
+                        </div>
+                        ${improvementText}
+                    </div>`;
+            }
+
             let html = `
                 <div class="card"><h3>Genel Toplam</h3><div class="stats-info" style="margin-top:15px;">
                     <span>📝 ${total} soru</span><span>✅ ${correct} doğru</span><span>❌ ${wrong} yanlış</span>
                     <span>🎯 ${total > 0 ? Math.round((correct/total)*100) : 0}% başarı</span>
                 </div></div>
+                <div class="card"><h3>Son 1 Haftalık Performans</h3>${weeklyHtml || '<p style="color:#999;padding:10px;">Son 1 haftada veri yok</p>'}</div>
                 <div class="card"><h3>Derslere Göre Soru Dağılımı</h3>
                     <div class="chart-container"><canvas id="myStatsChart"></canvas></div>
                 </div>
@@ -459,6 +509,19 @@
             contentContainer.innerHTML = html;
             
             if(Object.keys(subjectData).length > 0) { createChart('myStatsChart', subjectData); }
+            
+            const statsToSave = {};
+            for (const subject in weeklySubjectData) {
+                const subData = weeklySubjectData[subject];
+                statsToSave[subject] = subData.solved > 0 ? Math.round((subData.correct/subData.solved)*100) : 0;
+            }
+            const q = query(collection(db, 'weeklyStats'), where('uid', '==', currentUser.uid));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                await addDoc(collection(db, 'weeklyStats'), { uid: currentUser.uid, stats: statsToSave, updatedAt: Timestamp.now() });
+            } else {
+                await updateDoc(doc(db, 'weeklyStats', snapshot.docs[0].id), { stats: statsToSave, updatedAt: Timestamp.now() });
+            }
         }
         
         function createChart(canvasId, subjectData) {
@@ -544,7 +607,7 @@
             contentContainer.innerHTML = html;
         }
         
-// --- BU FONKSİYONLARI GÜNCELLEYİN ---
+
 
         async function getStudentStats(uid) {
             const q = query(collection(db, 'entries'), where('uid', '==', uid));
@@ -609,34 +672,89 @@
             const studentQuery = query(collection(db, 'users'), where('coachId', '==', coachUid));
             const studentSnapshot = await getDocs(studentQuery);
             if (studentSnapshot.empty) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">İstatistik gösterecek öğrenci bulunmuyor.</p>'; return; }
-            const studentUids = studentSnapshot.docs.map(doc => doc.data().uid);
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
             const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-            const entriesQuery = query(collection(db, 'entries'), where('uid', 'in', studentUids), where('date', '>=', sevenDaysAgoStr));
-            const entriesSnapshot = await getDocs(entriesQuery);
-            if (entriesSnapshot.empty) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Öğrencileriniz son 1 hafta içinde hiç soru girişi yapmamış.</p>'; return; }
-            const subjectStats = {};
-            entriesSnapshot.forEach(doc => {
-                const entry = doc.data();
-                if (!subjectStats[entry.subject]) { subjectStats[entry.subject] = { solved: 0, correct: 0, wrong: 0 }; }
-                subjectStats[entry.subject].solved += entry.solved;
-                subjectStats[entry.subject].correct += entry.correct;
-                subjectStats[entry.subject].wrong += entry.wrong;
-            });
-            let html = '<h4>Son 1 Haftalık Ders Performansı</h4>';
-            for (const subject in subjectStats) {
-                const stats = subjectStats[subject];
-                html += `
-                    <div class="card">
-                        <div class="card-title">${subject}</div>
-                        <div class="stats-info">
-                            <span>📝 ${stats.solved} soru</span><span>✅ ${stats.correct} doğru</span><span>❌ ${stats.wrong} yanlış</span>
-                            <span>🎯 ${stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0}% başarı</span>
-                        </div>
-                    </div>`;
+            const studentStats = {};
+            for (const studentDoc of studentSnapshot.docs) {
+                const student = studentDoc.data();
+                const entriesQuery = query(collection(db, 'entries'), where('uid', '==', student.uid), where('date', '>=', sevenDaysAgoStr));
+                const entriesSnapshot = await getDocs(entriesQuery);
+                if (!entriesSnapshot.empty) {
+                    studentStats[student.name] = { uid: student.uid, subjects: {} };
+                    entriesSnapshot.forEach(doc => {
+                        const entry = doc.data();
+                        if (!studentStats[student.name].subjects[entry.subject]) {
+                            studentStats[student.name].subjects[entry.subject] = { solved: 0, correct: 0, wrong: 0 };
+                        }
+                        studentStats[student.name].subjects[entry.subject].solved += entry.solved;
+                        studentStats[student.name].subjects[entry.subject].correct += entry.correct;
+                        studentStats[student.name].subjects[entry.subject].wrong += entry.wrong;
+                    });
+                }
+            }
+            if (Object.keys(studentStats).length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Öğrencileriniz son 1 hafta içinde hiç soru girişi yapmamış.</p>'; return; }
+            let html = '<h4>Son 1 Haftalık Öğrenci Performansı</h4>';
+            for (const studentName in studentStats) {
+                html += `<div class="card"><div class="card-title">${studentName}</div>`;
+                const previousStats = await getPreviousWeekStats(studentStats[studentName].uid);
+                for (const subject in studentStats[studentName].subjects) {
+                    const stats = studentStats[studentName].subjects[subject];
+                    const successRate = stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0;
+                    const prevRate = previousStats[subject] || 0;
+                    const improvement = successRate - prevRate;
+                    let improvementText = '';
+                    if (prevRate > 0) {
+                        if (improvement > 0) {
+                            improvementText = `<div style="color: #10b981; font-size: 13px; margin-top: 5px;">🎉 Harika! Geçen haftaya göre %${improvement} daha iyi! Devam et!</div>`;
+                        } else if (improvement < 0) {
+                            improvementText = `<div style="color: #f59e0b; font-size: 13px; margin-top: 5px;">💪 Geçen haftaya göre %${Math.abs(improvement)} düşüş. Biraz daha çaba göster, başarabilirsin!</div>`;
+                        } else {
+                            improvementText = `<div style="color: #3b82f6; font-size: 13px; margin-top: 5px;">🎯 Stabil performans! Bir sonraki hafta daha iyisini yapabilirsin!</div>`;
+                        }
+                    }
+                    html += `
+                        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                            <strong style="color: #667eea;">${subject}</strong>
+                            <div class="stats-info" style="margin-top: 5px;">
+                                <span>📝 Soru: ${stats.solved}</span>
+                                <span>✅ Doğru: ${stats.correct}</span>
+                                <span>❌ Yanlış: ${stats.wrong}</span>
+                                <span>🎯 Başarı: %${successRate}</span>
+                            </div>
+                            ${improvementText}
+                        </div>`;
+                }
+                html += '</div>';
             }
             container.innerHTML = html;
+            await saveWeeklyStats(studentStats);
+        }
+
+        async function getPreviousWeekStats(uid) {
+            const q = query(collection(db, 'weeklyStats'), where('uid', '==', uid));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return {};
+            const data = snapshot.docs[0].data();
+            return data.stats || {};
+        }
+
+        async function saveWeeklyStats(studentStats) {
+            for (const studentName in studentStats) {
+                const uid = studentStats[studentName].uid;
+                const stats = {};
+                for (const subject in studentStats[studentName].subjects) {
+                    const subjectData = studentStats[studentName].subjects[subject];
+                    stats[subject] = subjectData.solved > 0 ? Math.round((subjectData.correct/subjectData.solved)*100) : 0;
+                }
+                const q = query(collection(db, 'weeklyStats'), where('uid', '==', uid));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    await addDoc(collection(db, 'weeklyStats'), { uid, stats, updatedAt: Timestamp.now() });
+                } else {
+                    await updateDoc(doc(db, 'weeklyStats', snapshot.docs[0].id), { stats, updatedAt: Timestamp.now() });
+                }
+            }
         }
 
         window.showCoachDetailView = async function(coachUid, coachName) {
@@ -650,6 +768,7 @@
                 <div id="coachDetailContent"><div class="loading">Yükleniyor...</div></div>`;
             const coachDetailContent = document.getElementById('coachDetailContent');
             const showDetailTab = async (tabName) => {
+                coachDetailContent.innerHTML = '<div class="loading">Yükleniyor...</div>';
                 if (tabName === 'students') {
                     await loadCoachStudents(coachUid, coachDetailContent);
                 } else if (tabName === 'stats') {
