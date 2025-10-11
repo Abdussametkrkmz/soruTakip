@@ -1,805 +1,1144 @@
-
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Soru Takip Sistemi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Kütüphaneleri -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel (JSX'i tarayıcıda çalıştırmak için) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Chart.js (Grafikler için) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK v8 (Tarayıcı uyumluluğu için) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px; margin: 0 auto; background: white;
-            border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        h1 { color: #667eea; margin-bottom: 10px; text-align: center; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
-        .auth-section, .app-section { display: none; }
-        .auth-section.active, .app-section.active { display: block; }
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
-        input, select {
-            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
-            border-radius: 10px; font-size: 16px; transition: border-color 0.3s;
-        }
-        input:focus, select:focus { outline: none; border-color: #667eea; }
-        button {
-            width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; border-radius: 10px; font-size: 16px;
-            font-weight: 600; cursor: pointer; transition: transform 0.2s;
-        }
-        button:hover { transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        .btn-secondary { background: #f0f0f0; color: #333; margin-top: 10px; }
-        .btn-danger { background: #ef4444; }
-        .btn-success { background: #10b981; }
-        .btn-small {
-            padding: 8px 16px; font-size: 13px; width: auto;
-            display: inline-block; margin: 5px;
-        }
-        .user-info {
-            background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .tabs, .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab, .sub-tab {
-            flex: 1; min-width: 100px; padding: 12px; background: #f0f0f0;
-            border: none; border-radius: 10px; cursor: pointer;
-            font-weight: 600; font-size: 14px;
-        }
-        .tab.active, .sub-tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .sub-tabs { margin-top: 20px; }
-        .card {
-            background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px;
-            border: 2px solid #e0e0e0; transition: all 0.3s;
-        }
-        .card:hover { border-color: #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); }
-        .card-title {
-            font-weight: 600; color: #667eea; margin-bottom: 10px;
-            font-size: 18px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .clickable-title {
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .clickable-title:hover {
-            color: #764ba2;
-        }
-        .loading { text-align: center; padding: 20px; color: #666; }
-        .error { background: #fee; color: #c33; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-        .success { background: #efe; color: #3c3; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-        .role-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 15px;
-            font-size: 11px; font-weight: 600; margin-left: 10px;
-        }
-        .role-admin { background: #ef4444; color: white; }
-        .role-coach { background: #10b981; color: white; }
-        .role-student { background: #3b82f6; color: white; }
-        .role-pending { background: #f59e0b; color: white; }
-        .stats-info {
-            display: flex; gap: 15px; font-size: 14px;
-            color: #666; flex-wrap: wrap; margin-top: 10px;
-        }
-        .chart-container { margin-top: 20px; }
+      body {
+        font-family: Inter, sans-serif;
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="auth-section active" id="authSection">
-		<h3 style="text-align: center; font-weight: 600; color: #4a5568; margin-bottom: 25px; font-size: 16px; letter-spacing: 0.5px;">
-                MEHMET CANAN ÖZYAŞAR ANADOLU LİSESİ
-            </h3>
-            <h1>📚 Soru Takip Sistemi</h1>
-            <p class="subtitle">Günlük soru çözüm takibinizi yapın</p>
-            <div id="authMessage"></div>
-            <div class="input-group">
-                <label>E-posta</label>
-                <input type="email" id="emailInput" placeholder="ornek@email.com">
-            </div>
-            <div class="input-group">
-                <label>Şifre</label>
-                <input type="password" id="passwordInput" placeholder="En az 6 karakter">
-            </div>
-            <div class="input-group" id="nameGroup" style="display:none;">
-                <label>Ad Soyad</label>
-                <input type="text" id="nameInput" placeholder="Adınız ve soyadınız">
-            </div>
-            <div class="input-group" id="coachGroup" style="display:none;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="isCoachCheckbox" style="width: auto; margin-right: 10px;">
-                    <span>Öğretmen (Koç) olarak kayıt olmak istiyorum</span>
-                </label>
-            </div>
-            <div class="input-group" id="selectCoachGroup" style="display:none;">
-                <label>Koçunuzu Seçin</label>
-                <select id="coachSelect">
-                    <option value="">Koç seçin...</option>
-                </select>
-            </div>
-            <button id="signUpBtn" style="display:none;">Kayıt Ol</button>
-            <button id="signInBtn">Giriş Yap</button>
-            <button class="btn-secondary" id="toggleModeBtn">Hesabım yok, kayıt ol</button>
-        </div>
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
 
-        <div class="app-section" id="appSection">
-            <div id="appMessage"></div>
-            <div class="user-info">
-                <div>
-                    <strong id="userName">Kullanıcı</strong>
-                    <span id="userRole"></span>
-                    <div style="font-size: 12px; color: #666;" id="userEmail"></div>
-                </div>
-                <button class="btn-small btn-secondary" id="logoutBtn">Çıkış</button>
-            </div>
-            <div id="tabsContainer"></div>
-            <div id="contentContainer"></div>
-        </div>
-    </div>
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, Timestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+      // --- FIREBASE CONFIG ---
+      const firebaseConfig = {
+          apiKey: "AIzaSyDz0lFClcTpySHPCZnLEyXWHeQzd9RyH58",
+          authDomain: "mcoalogrencikocluk.firebaseapp.com",
+          projectId: "mcoalogrencikocluk",
+          storageBucket: "mcoalogrencikocluk.firebasestorage.app",
+          messagingSenderId: "950814379359",
+          appId: "1:950814379359:web:970b00931d5e0763bdbaea"
+      };
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDz0lFClcTpySHPCZnLEyXWHeQzd9RyH58",
-            authDomain: "mcoalogrencikocluk.firebaseapp.com",
-            projectId: "mcoalogrencikocluk",
-            storageBucket: "mcoalogrencikocluk.firebasestorage.app",
-            messagingSenderId: "950814379359",
-            appId: "1:950814379359:web:970b00931d5e0763bdbaea"
+      // --- Firebase Servislerini Başlatma ---
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+      const Timestamp = firebase.firestore.Timestamp;
+
+      const ADMIN_EMAIL = "abdussametkrkmz@gmail.com";
+
+      const allBadges = [
+        { id: 'total_100', title: 'Çaylak Savaşçı', description: 'Toplam 100 soru çöz', icon: '🦾', condition: (stats) => stats.totalSolved >= 100 },
+        { id: 'total_500', title: 'Soru Avcısı', description: 'Toplam 500 soru çöz', icon: '🎯', condition: (stats) => stats.totalSolved >= 500 },
+        { id: 'total_1000', title: 'Soru Canavarı', description: 'Toplam 1000 soru çöz', icon: '👹', condition: (stats) => stats.totalSolved >= 1000 },
+        { id: 'total_2500', title: 'Soru Profesörü', description: 'Toplam 2500 soru çöz', icon: '🧑‍🏫', condition: (stats) => stats.totalSolved >= 2500 },
+        { id: 'total_5000', title: 'Soru Efsanesi', description: 'Toplam 5000 soru çöz', icon: '👑', condition: (stats) => stats.totalSolved >= 5000 },
+        { id: 'math_100', title: 'Matematik Çırağı', description: '100 Matematik sorusu çöz', icon: '🧮', condition: (stats) => (stats.bySubject['Matematik']?.solved || 0) >= 100 },
+        { id: 'math_500', title: 'Matematik Kalfası', description: '500 Matematik sorusu çöz', icon: '📐', condition: (stats) => (stats.bySubject['Matematik']?.solved || 0) >= 500 },
+        { id: 'math_1000', title: 'Matematik Ustası', description: '1000 Matematik sorusu çöz', icon: '🧠', condition: (stats) => (stats.bySubject['Matematik']?.solved || 0) >= 1000 },
+        { id: 'physics_100', title: 'Fizik Meraklısı', description: '100 Fizik sorusu çöz', icon: '⚛️', condition: (stats) => (stats.bySubject['Fizik']?.solved || 0) >= 100 },
+        { id: 'physics_500', title: 'Fizik Bilgini', description: '500 Fizik sorusu çöz', icon: '🔭', condition: (stats) => (stats.bySubject['Fizik']?.solved || 0) >= 500 },
+        { id: 'physics_1000', title: 'Fizik Dehası', description: '1000 Fizik sorusu çöz', icon: '🌌', condition: (stats) => (stats.bySubject['Fizik']?.solved || 0) >= 1000 },
+        { id: 'turkce_100', title: 'Kitap Kurdu', description: '100 Türkçe sorusu çöz', icon: '📖', condition: (stats) => (stats.bySubject['Türkçe']?.solved || 0) >= 100 },
+        { id: 'turkce_500', title: 'Edebiyat Eleştirmeni', description: '500 Türkçe sorusu çöz', icon: '🖋️', condition: (stats) => (stats.bySubject['Türkçe']?.solved || 0) >= 500 },
+        { id: 'turkce_1000', title: 'Dilbilimci', description: '1000 Türkçe sorusu çöz', icon: '📜', condition: (stats) => (stats.bySubject['Türkçe']?.solved || 0) >= 1000 },
+        { id: 'kimya_100', title: 'Deneyci', description: '100 Kimya sorusu çöz', icon: '🧪', condition: (stats) => (stats.bySubject['Kimya']?.solved || 0) >= 100 },
+        { id: 'kimya_500', title: 'Kimyager', description: '500 Kimya sorusu çöz', icon: '⚗️', condition: (stats) => (stats.bySubject['Kimya']?.solved || 0) >= 500 },
+        { id: 'kimya_1000', title: 'Elementlerin Efendisi', description: '1000 Kimya sorusu çöz', icon: '🔥', condition: (stats) => (stats.bySubject['Kimya']?.solved || 0) >= 1000 },
+        { id: 'biyoloji_100', title: 'Doğa Gözlemcisi', description: '100 Biyoloji sorusu çöz', icon: '🌱', condition: (stats) => (stats.bySubject['Biyoloji']?.solved || 0) >= 100 },
+        { id: 'biyoloji_500', title: 'Genetik Uzmanı', description: '500 Biyoloji sorusu çöz', icon: '🧬', condition: (stats) => (stats.bySubject['Biyoloji']?.solved || 0) >= 500 },
+        { id: 'biyoloji_1000', title: 'Yaşam Bilgini', description: '1000 Biyoloji sorusu çöz', icon: '🔬', condition: (stats) => (stats.bySubject['Biyoloji']?.solved || 0) >= 1000 },
+        { id: 'tarih_100', title: 'Zaman Yolcusu', description: '100 Tarih sorusu çöz', icon: '⏳', condition: (stats) => (stats.bySubject['Tarih']?.solved || 0) >= 100 },
+        { id: 'tarih_500', title: 'Tarihçi', description: '500 Tarih sorusu çöz', icon: '🏛️', condition: (stats) => (stats.bySubject['Tarih']?.solved || 0) >= 500 },
+        { id: 'tarih_1000', title: 'Geçmişin Hakimi', description: '1000 Tarih sorusu çöz', icon: '🗺️', condition: (stats) => (stats.bySubject['Tarih']?.solved || 0) >= 1000 },
+        { id: 'cografya_100', title: 'Kaşif', description: '100 Coğrafya sorusu çöz', icon: '🧭', condition: (stats) => (stats.bySubject['Coğrafya']?.solved || 0) >= 100 },
+        { id: 'cografya_500', title: 'Gezgin', description: '500 Coğrafya sorusu çöz', icon: '🌍', condition: (stats) => (stats.bySubject['Coğrafya']?.solved || 0) >= 500 },
+        { id: 'cografya_1000', title: 'Dünya Vatandaşı', description: '1000 Coğrafya sorusu çöz', icon: '🌐', condition: (stats) => (stats.bySubject['Coğrafya']?.solved || 0) >= 1000 },
+        { id: 'deneme_5', title: 'Maraton Koşucusu', description: '5 deneme sınavı tamamla', icon: '🏃', condition: (stats) => (stats.bySubject['Deneme Sınavı']?.solved || 0) >= 5 },
+        { id: 'deneme_15', title: 'Deneme Uzmanı', description: '15 deneme sınavı tamamla', icon: '🏅', condition: (stats) => (stats.bySubject['Deneme Sınavı']?.solved || 0) >= 15 },
+        { id: 'deneme_30', title: 'Deneme Fatihi', description: '30 deneme sınavı tamamla', icon: '🏆', condition: (stats) => (stats.bySubject['Deneme Sınavı']?.solved || 0) >= 30 },
+        { id: 'consistent_7', title: 'İstikrar Abidesi', description: '7 gün üst üste soru çöz', icon: '🗓️', condition: (stats) => stats.streak >= 7 },
+        { id: 'perfect_day', title: 'Mükemmel Gün', description: 'Bir günde 200\'den fazla soru çöz', icon: '🌟', condition: (stats) => stats.maxInADay >= 200 },
+      ];
+      
+      const getPreviousWeekStats = async (uid) => {
+          const q = db.collection('weeklyStats').where('uid', '==', uid);
+          const snapshot = await q.get();
+          if (snapshot.empty) return {};
+          return snapshot.docs[0].data().stats || {};
+      };
+      
+      const Toast = ({ message, type, onClose }) => {
+          if (!message) return null;
+          const baseStyle = "fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white transition-transform transform translate-x-0 z-50";
+          const styles = { success: "bg-green-500", error: "bg-red-500", info: "bg-blue-500" };
+          useEffect(() => {
+              const timer = setTimeout(onClose, 5000);
+              return () => clearTimeout(timer);
+          }, [onClose]);
+          return <div className={`${baseStyle} ${styles[type] || styles.info}`}>{message}</div>;
+      };
+
+      const Modal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Onayla", confirmBg = "bg-red-600" }) => {
+          if (!isOpen) return null;
+          return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                  <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+                      <h3 className="text-xl font-bold text-gray-800 mb-4">{title}</h3>
+                      <p className="text-gray-600 mb-6">{message}</p>
+                      <div className="flex justify-end gap-4">
+                          <button onClick={onCancel} className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold">İptal</button>
+                          <button onClick={onConfirm} className={`px-6 py-2 rounded-lg text-white ${confirmBg} hover:opacity-90 font-semibold`}>{confirmText}</button>
+                      </div>
+                  </div>
+              </div>
+          );
+      };
+
+      const ImprovementMessage = ({ currentRate, prevRate }) => {
+          if (prevRate === undefined || prevRate === null || isNaN(prevRate) || prevRate === 0) return null;
+          const improvement = currentRate - prevRate;
+          if (improvement > 0) return <div className="text-green-400 text-xs mt-1">🎉 Harika! Geçen haftaya göre %{improvement.toFixed(0)} daha iyi!</div>;
+          if (improvement < 0) return <div className="text-yellow-400 text-xs mt-1">💪 Geçen haftaya göre %{Math.abs(improvement).toFixed(0)} düşüş. Daha iyisini yapabilirsin!</div>;
+          return <div className="text-blue-400 text-xs mt-1">🎯 Stabil performans! Bu hafta da aynı başarıyı korudun.</div>;
+      };
+
+      const TabButton = ({ tabName, activeTab, label, onClick }) => (
+          <button onClick={() => onClick(tabName)} className={`px-4 py-2 text-sm md:text-base rounded-t-lg font-semibold transition-colors ${activeTab === tabName ? 'bg-white/20 text-white' : 'text-gray-300 hover:bg-white/10'}`}>
+              {label}
+          </button>
+      );
+      
+      function AuthScreen({ setToastMessage }) {
+          const [isSignUpMode, setIsSignUpMode] = useState(false);
+          const [postRegistrationMessage, setPostRegistrationMessage] = useState('');
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+          const [name, setName] = useState('');
+          const [isCoach, setIsCoach] = useState(false);
+          const [selectedCoach, setSelectedCoach] = useState('');
+          const [coaches, setCoaches] = useState([]);
+          const [loading, setLoading] = useState(false);
+
+          useEffect(() => {
+              if (isSignUpMode && !isCoach) {
+                  loadApprovedCoaches();
+              }
+          }, [isSignUpMode, isCoach]);
+
+          const loadApprovedCoaches = async () => {
+              try {
+                  const q = db.collection('users').where('role', '==', 'coach').where('approved', '==', true);
+                  const snapshot = await q.get();
+                  const coachList = snapshot.docs.map(docSnap => ({ id: docSnap.data().uid, ...docSnap.data() }));
+                  setCoaches(coachList);
+              } catch (error) {
+                  setToastMessage('Koçlar yüklenemedi: ' + error.message, 'error');
+              }
+          };
+
+          const handleSignUp = async () => {
+              if (!email || !password || !name) { setToastMessage('Lütfen tüm alanları doldurun', 'error'); return; }
+              if (!isCoach && !selectedCoach) { setToastMessage('Lütfen bir koç seçin', 'error'); return; }
+              setLoading(true);
+              try {
+                  const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                  await db.collection('users').doc(userCredential.user.uid).set({
+                      uid: userCredential.user.uid, email, name, role: isCoach ? 'coach' : 'student',
+                      approved: isCoach ? false : true, coachId: isCoach ? null : selectedCoach, createdAt: Timestamp.now()
+                  });
+                  if (isCoach) {
+                      setPostRegistrationMessage('Hesabınız yönetici tarafından onaylandıktan sonra giriş yapabilirsiniz.');
+                      setIsSignUpMode(false);
+                      setEmail('');
+                      setPassword('');
+                  } else {
+                      setToastMessage('Kayıt başarılı! Giriş yapabilirsiniz.', 'success');
+                      setIsSignUpMode(false);
+                  }
+              } catch (error) {
+                  setToastMessage('Kayıt hatası: ' + error.message, 'error');
+              } finally {
+                  setLoading(false);
+              }
+          };
+
+          const handleSignIn = async () => {
+              if (!email || !password) { setToastMessage('Lütfen e-posta ve şifre girin', 'error'); return; }
+              setLoading(true);
+              try { await auth.signInWithEmailAndPassword(email, password); } 
+              catch (error) { setToastMessage('Giriş başarısız: ' + error.message, 'error'); } 
+              finally { setLoading(false); }
+          };
+
+          return (
+              <div className="bg-white rounded-2xl p-8 md:p-12 shadow-2xl w-full max-w-md">
+                   <div className="text-center">
+                      <h3 className="font-semibold text-gray-600 mb-2">MEHMET CANAN ÖZYAŞAR ANADOLU LİSESİ</h3>
+                      <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600 mb-2">Soru Takip Sistemi</h1>
+                      <p className="text-gray-500 mb-8">Günlük soru çözüm takibinizi yapın</p>
+                  </div>
+                  <div className="space-y-6">
+                      <div>
+                          <label className="block mb-2 font-medium text-gray-700">E-posta</label>
+                          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ornek@email.com" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                      </div>
+                      <div>
+                          <label className="block mb-2 font-medium text-gray-700">Şifre</label>
+                          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="En az 6 karakter" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                      </div>
+                      {isSignUpMode && (
+                          <>
+                              <div>
+                                  <label className="block mb-2 font-medium text-gray-700">Ad Soyad</label>
+                                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Adınız ve soyadınız" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                              </div>
+                              <div className="flex items-center">
+                                  <input type="checkbox" id="isCoach" checked={isCoach} onChange={(e) => setIsCoach(e.target.checked)} className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                                  <label htmlFor="isCoach" className="ml-2 block text-sm text-gray-900">Öğretmen (Koç) olarak kayıt olmak istiyorum</label>
+                              </div>
+                              { !isCoach && (
+                                  <div>
+                                      <label className="block mb-2 font-medium text-gray-700">Koçunuzu Seçin</label>
+                                      <select value={selectedCoach} onChange={(e) => setSelectedCoach(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                          <option value="">Koç seçin...</option>
+                                          {coaches.map(coach => <option key={coach.uid} value={coach.uid}>{coach.name}</option>)}
+                                      </select>
+                                  </div>
+                              )}
+                          </>
+                      )}
+                      {isSignUpMode ? (
+                          <button onClick={handleSignUp} disabled={loading} className="w-full p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                              {loading ? 'İşleniyor...' : 'Kayıt Ol'}
+                          </button>
+                      ) : (
+                          <>
+                              {postRegistrationMessage && (
+                                  <div className="mb-4 p-3 text-center text-sm text-green-800 bg-green-100 rounded-lg">
+                                      {postRegistrationMessage}
+                                  </div>
+                              )}
+                              <button onClick={handleSignIn} disabled={loading} className="w-full p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                  {loading ? 'İşleniyor...' : 'Giriş Yap'}
+                              </button>
+                          </>
+                      )}
+                  </div>
+                  <p className="text-center mt-6">
+                      <button onClick={() => { setIsSignUpMode(!isSignUpMode); setPostRegistrationMessage(''); }} className="text-indigo-600 hover:underline font-medium">
+                          {isSignUpMode ? 'Zaten hesabım var, giriş yap' : 'Hesabım yok, kayıt ol'}
+                      </button>
+                  </p>
+              </div>
+          );
+      }
+
+      function StudentDashboard({ userData, setUserData, setToastMessage }) {
+          const [activeTab, setActiveTab] = useState('overview');
+          const [entries, setEntries] = useState([]);
+          const [loading, setLoading] = useState(false);
+          const [stats, setStats] = useState(null);
+          const [overviewData, setOverviewData] = useState(null);
+          const [myBadges, setMyBadges] = useState([]);
+          const [modal, setModal] = useState({ isOpen: false });
+          const [newGoal, setNewGoal] = useState(userData.dailyGoal || 100);
+          const chartRef = useRef(null);
+          const chartInstanceRef = useRef(null);
+          const [coaches, setCoaches] = useState([]);
+          const [currentCoachName, setCurrentCoachName] = useState('Yükleniyor...');
+          const [selectedCoachId, setSelectedCoachId] = useState('');
+          const [subject, setSubject] = useState('');
+          const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+          const [solved, setSolved] = useState('');
+          const [correct, setCorrect] = useState('');
+          const [wrong, setWrong] = useState('');
+          
+          const checkAndAwardBadges = async () => {
+              const allEntriesQuery = db.collection('entries').where('uid', '==', userData.uid);
+              const allEntriesSnapshot = await allEntriesQuery.get();
+              let totalSolved = 0;
+              const bySubject = {};
+              const dailyCounts = {};
+              const uniqueDates = new Set();
+              allEntriesSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  totalSolved += data.solved;
+                  bySubject[data.subject] = { solved: (bySubject[data.subject]?.solved || 0) + data.solved };
+                  dailyCounts[data.date] = (dailyCounts[data.date] || 0) + data.solved;
+                  uniqueDates.add(data.date);
+              });
+              const sortedDates = [...uniqueDates].sort();
+              let streak = 0;
+              if (sortedDates.length > 0) {
+                  streak = 1;
+                  for (let i = sortedDates.length - 1; i > 0; i--) {
+                      const currentDate = new Date(sortedDates[i]);
+                      const prevDate = new Date(sortedDates[i - 1]);
+                      const diffTime = currentDate - prevDate;
+                      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                      if (diffDays === 1) streak++;
+                      else break;
+                  }
+              }
+              const calculatedStats = { totalSolved, bySubject, streak, maxInADay: Math.max(0, ...Object.values(dailyCounts)) };
+              const badgesDocRef = db.collection('userBadges').doc(userData.uid);
+              const badgesDoc = await badgesDocRef.get();
+              const currentBadges = badgesDoc.exists ? badgesDoc.data().earnedBadges : [];
+              const newBadges = [];
+              for (const badge of allBadges) {
+                  if (!currentBadges.includes(badge.id) && badge.condition(calculatedStats)) {
+                      newBadges.push(badge.id);
+                  }
+              }
+              if (newBadges.length > 0) {
+                  await badgesDocRef.set({ earnedBadges: [...currentBadges, ...newBadges] }, { merge: true });
+                  newBadges.forEach(badgeId => {
+                      const badgeInfo = allBadges.find(b => b.id === badgeId);
+                      setToastMessage(`Yeni Rozet Kazandın: ${badgeInfo.title}!`, 'success');
+                  });
+                  fetchMyBadges();
+              }
+          };
+          const fetchOverviewData = async () => {
+              setLoading(true);
+              try {
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const sevenDaysAgo = new Date();
+                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+                  const todayQuery = db.collection('entries').where('uid', '==', userData.uid).where('date', '==', todayStr);
+                  const weeklyQuery = db.collection('entries').where('uid', '==', userData.uid).where('date', '>=', sevenDaysAgoStr);
+                  const [todaySnapshot, weeklySnapshot] = await Promise.all([ todayQuery.get(), weeklyQuery.get() ]);
+                  const todaysSolved = todaySnapshot.docs.reduce((sum, doc) => sum + doc.data().solved, 0);
+                  const weeklySubjects = {};
+                  weeklySnapshot.forEach(doc => {
+                      const data = doc.data();
+                      if (!weeklySubjects[data.subject]) weeklySubjects[data.subject] = { solved: 0, correct: 0 };
+                      weeklySubjects[data.subject].solved += data.solved;
+                      weeklySubjects[data.subject].correct += data.correct;
+                  });
+                  let bestSubject = { name: '-', rate: -1 };
+                  let worstSubject = { name: '-', rate: 101 };
+                  Object.entries(weeklySubjects).forEach(([name, data]) => {
+                      if (data.solved === 0) return;
+                      const rate = (data.correct / data.solved) * 100;
+                      if (rate > bestSubject.rate) bestSubject = { name, rate };
+                      if (rate < worstSubject.rate) worstSubject = { name, rate };
+                  });
+                  if (Object.keys(weeklySubjects).length <= 1) {
+                      if(bestSubject.name !== '-') worstSubject = { ...bestSubject };
+                      else worstSubject.name = '-';
+                  }
+                  if (worstSubject.rate === 101) worstSubject.name = '-';
+                  setOverviewData({ todaysSolved, bestSubject, worstSubject });
+              } catch (error) {
+                  setToastMessage("Genel bakış verileri yüklenemedi.", "error");
+              }
+              setLoading(false);
+          };
+          const fetchMyEntries = async () => {
+              setLoading(true);
+              try {
+                  const q = db.collection('entries').where('uid', '==', userData.uid);
+                  const snapshot = await q.get();
+                  const entriesList = snapshot.docs.map(d => ({ docId: d.id, ...d.data() }));
+                  entriesList.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+                  setEntries(entriesList);
+              } catch (error) {
+                  setToastMessage("Kayıtlar yüklenirken bir hata oluştu.", "error");
+              }
+              setLoading(false);
+          };
+          const fetchMyStats = async () => {
+              setLoading(true);
+              try {
+                  const sevenDaysAgo = new Date();
+                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+                  const weeklyQuery = db.collection('entries').where('uid', '==', userData.uid).where('date', '>=', sevenDaysAgoStr);
+                  const allQuery = db.collection('entries').where('uid', '==', userData.uid);
+                  const [weeklySnapshot, allSnapshot, previousStats] = await Promise.all([
+                      weeklyQuery.get(),
+                      allQuery.get(),
+                      getPreviousWeekStats(userData.uid)
+                  ]);
+                  let totalSolved = 0, totalCorrect = 0, totalWrong = 0;
+                  const subjectData = {};
+                  const weeklySubjectData = {};
+                  allSnapshot.forEach(doc => {
+                      const data = doc.data();
+                      totalSolved += data.solved || 0;
+                      totalCorrect += data.correct || 0;
+                      totalWrong += data.wrong || 0;
+                      if (!subjectData[data.subject]) subjectData[data.subject] = { solved: 0 };
+                      subjectData[data.subject].solved += data.solved;
+                  });
+                  weeklySnapshot.forEach(doc => {
+                      const data = doc.data();
+                      if (!weeklySubjectData[data.subject]) { weeklySubjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 }; }
+                      weeklySubjectData[data.subject].solved += data.solved;
+                      weeklySubjectData[data.subject].correct += data.correct;
+                      weeklySubjectData[data.subject].wrong += data.wrong;
+                  });
+                  setStats({ totalSolved, totalCorrect, totalWrong, subjectData, weeklySubjectData, previousStats });
+              } catch (error) {
+                  setToastMessage("İstatistikler yüklenemedi: " + error.message, 'error');
+              }
+              setLoading(false);
+          };
+          const fetchMyBadges = async () => {
+              setLoading(true);
+              try {
+                  const badgesDocRef = db.collection('userBadges').doc(userData.uid);
+                  const badgesDoc = await badgesDocRef.get();
+                  if (badgesDoc.exists) {
+                      setMyBadges(badgesDoc.data().earnedBadges);
+                  } else {
+                      setMyBadges([]);
+                  }
+              } catch (error) {
+                  setToastMessage("Rozetler yüklenemedi.", "error");
+              }
+              setLoading(false);
+          };
+          const fetchSettingsData = async () => {
+              setLoading(true);
+              try {
+                  const q = db.collection('users').where('role', '==', 'coach').where('approved', '==', true);
+                  const snapshot = await q.get();
+                  const coachList = snapshot.docs.map(docSnap => ({ id: docSnap.data().uid, ...docSnap.data() }));
+                  setCoaches(coachList);
+                  if (userData.coachId) {
+                      const coachDocRef = db.collection('users').doc(userData.coachId);
+                      const coachDoc = await coachDocRef.get();
+                      if (coachDoc.exists) {
+                          setCurrentCoachName(coachDoc.data().name);
+                      } else {
+                          setCurrentCoachName('Bilinmiyor');
+                      }
+                  } else {
+                      setCurrentCoachName('Atanmamış');
+                  }
+                  setSelectedCoachId(userData.coachId || '');
+              } catch (error) {
+                  setToastMessage("Ayarlar yüklenemedi.", "error");
+              }
+              setLoading(false);
+          };
+          useEffect(() => {
+              if (activeTab === 'overview') fetchOverviewData();
+              else if (activeTab === 'entry') fetchMyEntries();
+              else if (activeTab === 'mystats') fetchMyStats();
+              else if (activeTab === 'badges') fetchMyBadges();
+              else if (activeTab === 'settings') fetchSettingsData();
+          }, [activeTab]);
+          useEffect(() => {
+              if (activeTab === 'mystats' && stats && Object.keys(stats.subjectData).length > 0 && chartRef.current) {
+                  if (chartInstanceRef.current) chartInstanceRef.current.destroy();
+                  const ctx = chartRef.current.getContext('2d');
+                  chartInstanceRef.current = new Chart(ctx, {
+                      type: 'bar',
+                      data: {
+                          labels: Object.keys(stats.subjectData),
+                          datasets: [{
+                              label: 'Çözülen Soru Sayısı',
+                              data: Object.values(stats.subjectData).map(d => d.solved),
+                              backgroundColor: 'rgba(129, 140, 248, 0.5)',
+                              borderColor: 'rgba(129, 140, 248, 1)',
+                              borderWidth: 1
+                          }]
+                      },
+                      options: {
+                          scales: { y: { beginAtZero: true, ticks: { color: 'white' } }, x: { ticks: { color: 'white' } } },
+                          plugins: { legend: { labels: { color: 'white' } } },
+                      }
+                  });
+              }
+          }, [stats, activeTab]);
+          const handleUpdateGoal = async () => {
+              const goal = parseInt(newGoal);
+              if (!goal || goal <= 0) {
+                  setToastMessage("Lütfen geçerli bir hedef girin.", "error");
+                  return;
+              }
+              try {
+                  const userDocRef = db.collection('users').doc(userData.uid);
+                  await userDocRef.update({ dailyGoal: goal });
+                  setUserData({ ...userData, dailyGoal: goal });
+                  setToastMessage("Hedef güncellendi!", "success");
+              } catch (error) {
+                  setToastMessage("Hedef güncellenemedi: " + error.message, "error");
+              }
+          };
+          const handleSaveEntry = async (e) => {
+              e.preventDefault();
+              const solvedNum = parseInt(solved) || 0;
+              const correctNum = parseInt(correct) || 0;
+              const wrongNum = parseInt(wrong) || 0;
+              if (!subject || !date || solvedNum === 0) { setToastMessage('Lütfen tüm alanları eksiksiz doldurun.', 'error'); return; }
+              if (correctNum + wrongNum > solvedNum) { setToastMessage('Doğru ve yanlış sayısı toplamı, çözülen soru sayısından fazla olamaz.', 'error'); return; }
+              try {
+                  await db.collection('entries').add({
+                      uid: userData.uid, subject, date, solved: solvedNum, correct: correctNum, wrong: wrongNum,
+                      createdAt: Timestamp.now()
+                  });
+                  setToastMessage('Kayıt eklendi!', 'success');
+                  setSubject(''); setSolved(''); setCorrect(''); setWrong('');
+                  fetchMyEntries();
+                  checkAndAwardBadges();
+              } catch (error) {
+                  setToastMessage('Hata: ' + error.message, 'error');
+              }
+          };
+          const handleDeleteEntry = (entry) => {
+              setModal({ isOpen: true, title: 'Kaydı Sil', message: `${entry.date} tarihli ${entry.subject} kaydını silmek istediğinizden emin misiniz?`, onConfirm: () => confirmDeleteEntry(entry.docId), onCancel: () => setModal({ isOpen: false }), confirmText: "Evet, Sil" });
+          };
+          const confirmDeleteEntry = async (docId) => {
+              try {
+                  await db.collection('entries').doc(docId).delete();
+                  setToastMessage('Kayıt silindi.', 'success');
+                  fetchMyEntries();
+              } catch (error) {
+                  setToastMessage('Silme hatası: ' + error.message, 'error');
+              } finally {
+                  setModal({ isOpen: false });
+              }
+          };
+          const handleCoachChange = async () => {
+              if (!selectedCoachId) {
+                  setToastMessage("Lütfen yeni bir koç seçin.", "error");
+                  return;
+              }
+              if (selectedCoachId === userData.coachId) {
+                  setToastMessage("Zaten mevcut koçunuzu seçtiniz.", "info");
+                  return;
+              }
+              try {
+                  const userDocRef = db.collection('users').doc(userData.uid);
+                  await userDocRef.update({ coachId: selectedCoachId });
+                  setUserData({ ...userData, coachId: selectedCoachId });
+                  setToastMessage("Koç başarıyla değiştirildi!", "success");
+                  fetchSettingsData();
+              } catch (error) {
+                  setToastMessage("Koç değiştirilemedi: " + error.message, "error");
+              }
+          };
+          const renderContent = () => {
+              if (loading) return <div className="text-center p-10 text-white">Yükleniyor...</div>;
+              if (activeTab === 'overview') {
+                  if (!overviewData) return null;
+                  const progress = userData.dailyGoal > 0 ? (overviewData.todaysSolved / userData.dailyGoal) * 100 : 0;
+                  return (
+                      <div className="space-y-6">
+                          <div className="bg-black/20 p-4 rounded-lg">
+                              <h4 className="font-bold text-lg mb-3 text-center">Günlük Soru Hedefin</h4>
+                              <div className="flex items-center gap-4">
+                                  <input type="number" value={newGoal} onChange={e => setNewGoal(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white text-center font-bold text-xl" />
+                                  <button onClick={handleUpdateGoal} className="p-2 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 whitespace-nowrap">Kaydet</button>
+                              </div>
+                          </div>
+                          <div className="bg-black/20 p-4 rounded-lg">
+                              <h4 className="font-bold text-lg mb-3 text-center">Bugünkü İlerlemen</h4>
+                              <div className="w-full bg-gray-700 rounded-full h-6">
+                                  <div className="bg-gradient-to-r from-green-400 to-blue-500 h-6 rounded-full text-center text-white font-bold flex items-center justify-center" style={{ width: `${Math.min(progress, 100)}%` }}>
+                                      {progress.toFixed(0)}%
+                                  </div>
+                              </div>
+                              <p className="text-center mt-2 text-sm text-gray-300">{overviewData.todaysSolved} / {userData.dailyGoal || 100} Soru</p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="bg-green-500/20 border border-green-500 p-4 rounded-lg text-center">
+                                  <h5 className="font-bold">🚀 En Başarılı Dersin</h5>
+                                  <p className="text-2xl font-bold mt-2 text-white">{overviewData.bestSubject.name}</p>
+                                  <p className="text-sm text-green-300">{overviewData.bestSubject.rate > -1 ? `%${overviewData.bestSubject.rate.toFixed(0)} başarı` : 'Yeterli veri yok'}</p>
+                              </div>
+                               <div className="bg-yellow-500/20 border border-yellow-500 p-4 rounded-lg text-center">
+                                  <h5 className="font-bold">🧠 En Çok Zorlandığın</h5>
+                                  <p className="text-2xl font-bold mt-2 text-white">{overviewData.worstSubject.name}</p>
+                                  <p className="text-sm text-yellow-300">{overviewData.worstSubject.rate < 101 ? `%${overviewData.worstSubject.rate.toFixed(0)} başarı` : 'Yeterli veri yok'}</p>
+                              </div>
+                          </div>
+                      </div>
+                  )
+              }
+              if (activeTab === 'entry') {
+                  return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <form onSubmit={handleSaveEntry} className="space-y-4">
+                              <div>
+                                  <label className="block mb-1 font-medium text-gray-300">Ders</label>
+                                  <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white">
+                                      <option style={{color: 'black'}} value="">Ders seçin</option><option style={{color: 'black'}} value="Türkçe">Türkçe</option><option style={{color: 'black'}} value="Matematik">Matematik</option><option style={{color: 'black'}} value="Fizik">Fizik</option><option style={{color: 'black'}} value="Kimya">Kimya</option><option style={{color: 'black'}} value="Biyoloji">Biyoloji</option><option style={{color: 'black'}} value="Tarih">Tarih</option><option style={{color: 'black'}} value="Coğrafya">Coğrafya</option><option style={{color: 'black'}} value="Din Kültürü">Din Kültürü</option><option style={{color: 'black'}} value="Felsefe">Felsefe</option><option style={{color: 'black'}} value="Deneme Sınavı">Deneme Sınavı</option>
+                                  </select>
+                              </div>
+                              <div><label className="block mb-1 font-medium text-gray-300">Tarih</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white"/></div>
+                              <div><label className="block mb-1 font-medium text-gray-300">Çözülen Soru</label><input type="number" value={solved} onChange={e => setSolved(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white"/></div>
+                              <div><label className="block mb-1 font-medium text-gray-300">Doğru</label><input type="number" value={correct} onChange={e => setCorrect(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white"/></div>
+                              <div><label className="block mb-1 font-medium text-gray-300">Yanlış</label><input type="number" value={wrong} onChange={e => setWrong(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white"/></div>
+                              <button type="submit" className="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700">Kaydet</button>
+                          </form>
+                          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                               {entries.length > 0 ? entries.map(entry => (
+                                   <div key={entry.docId} className="bg-black/20 p-3 rounded-lg">
+                                      <div className="flex justify-between items-start">
+                                          <div>
+                                              <p className="font-bold text-indigo-300">{entry.subject}</p>
+                                              <p className="text-xs text-gray-400">{entry.date}</p>
+                                          </div>
+                                          <button onClick={() => handleDeleteEntry(entry)} className="text-red-400 hover:text-red-300 text-xs">Sil</button>
+                                      </div>
+                                      <div className="mt-2 flex flex-wrap gap-x-3 text-sm">
+                                          <span>📝{entry.solved}</span>
+                                          <span className="text-green-400">✅{entry.correct}</span>
+                                          <span className="text-red-400">❌{entry.wrong}</span>
+                                      </div>
+                                   </div>
+                               )) : <p className="text-gray-400 text-center mt-10">Henüz kayıt yok.</p>}
+                          </div>
+                      </div>
+                  );
+              }
+              if (activeTab === 'mystats') {
+                  if (!stats) return null;
+                  return (
+                      <div className="space-y-6">
+                          <div className="bg-black/20 p-4 rounded-lg text-center">
+                              <h4 className="font-bold text-lg mb-2">Genel Toplam</h4>
+                              <div className="flex justify-center flex-wrap gap-x-4 gap-y-2">
+                                   <span>📝 {stats.totalSolved} Soru</span>
+                                   <span className="text-green-400">✅ {stats.totalCorrect} Doğru</span>
+                                   <span className="text-red-400">❌ {stats.totalWrong} Yanlış</span>
+                                   <span>🎯 %{stats.totalSolved > 0 ? Math.round((stats.totalCorrect / stats.totalSolved) * 100) : 0} Başarı</span>
+                              </div>
+                          </div>
+                           <div className="bg-black/20 p-4 rounded-lg">
+                              <h4 className="font-bold text-lg mb-2 text-center">Son 1 Haftalık Performans</h4>
+                               {Object.keys(stats.weeklySubjectData).length > 0 ? (
+                                  <div className="space-y-3">
+                                      {Object.entries(stats.weeklySubjectData).map(([subject, weeklyData]) => {
+                                          const successRate = weeklyData.solved > 0 ? Math.round((weeklyData.correct / weeklyData.solved) * 100) : 0;
+                                          const prevRate = stats.previousStats ? stats.previousStats[subject] : 0;
+                                          return (
+                                              <div key={subject} className="bg-black/20 p-3 rounded-md">
+                                                  <p className="font-semibold text-indigo-300">{subject}</p>
+                                                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+                                                      <span>📝 Soru: {weeklyData.solved}</span>
+                                                      <span className="text-green-400">✅ D: {weeklyData.correct}</span>
+                                                      <span className="text-red-400">❌ Y: {weeklyData.wrong}</span>
+                                                      <span>🎯 B: %{successRate}</span>
+                                                  </div>
+                                                  <ImprovementMessage currentRate={successRate} prevRate={prevRate} />
+                                              </div>
+                                          )
+                                      })}
+                                  </div>
+                              ) : <p className="text-gray-400 text-center">Son 1 hafta içinde veri yok.</p>}
+                          </div>
+                           <div className="bg-black/20 p-4 rounded-lg">
+                              <h4 className="font-bold text-lg mb-4 text-center">Derslere Göre Soru Dağılımı</h4>
+                              {Object.keys(stats.subjectData).length > 0 ? <canvas ref={chartRef}></canvas> : <p className="text-gray-400 text-center">Grafik için veri bulunmuyor.</p>}
+                          </div>
+                      </div>
+                  );
+              }
+              if (activeTab === 'badges') {
+                  return (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {allBadges.map(badge => {
+                              const isEarned = myBadges.includes(badge.id);
+                              return (
+                                  <div key={badge.id} className={`p-4 rounded-lg text-center transition-all ${isEarned ? 'bg-green-500/20 border border-green-500' : 'bg-gray-500/20 border border-gray-500'}`}>
+                                      <div className={`text-5xl ${!isEarned && 'filter grayscale'}`}>{badge.icon}</div>
+                                      <h5 className={`font-bold mt-2 ${isEarned ? 'text-white' : 'text-gray-400'}`}>{badge.title}</h5>
+                                      <p className={`text-xs mt-1 ${isEarned ? 'text-green-300' : 'text-gray-500'}`}>{badge.description}</p>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  );
+              }
+              if (activeTab === 'settings') {
+                  return (
+                      <div className="space-y-6 max-w-lg mx-auto">
+                          <div className="bg-black/20 p-4 rounded-lg">
+                              <h4 className="font-bold text-lg mb-3">Koç Bilgileri</h4>
+                              <p className="text-gray-300">Mevcut koçunuz: <span className="font-bold text-white">{currentCoachName}</span></p>
+                          </div>
+                          <div className="bg-black/20 p-4 rounded-lg">
+                               <h4 className="font-bold text-lg mb-3">Koç Değiştir</h4>
+                               <div className="space-y-4">
+                                  <div>
+                                      <label className="block mb-1 font-medium text-gray-300">Yeni Koç Seç</label>
+                                      <select value={selectedCoachId} onChange={e => setSelectedCoachId(e.target.value)} className="w-full p-2 bg-white/10 rounded border border-white/20 text-white">
+                                          <option style={{ color: 'black' }} value="">Koç Seçin...</option>
+                                          {coaches.filter(c => c.uid !== userData.coachId).map(coach => (
+                                              <option key={coach.uid} style={{ color: 'black' }} value={coach.uid}>{coach.name}</option>
+                                          ))}
+                                      </select>
+                                  </div>
+                                  <button onClick={handleCoachChange} className="w-full p-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700">Koçu Güncelle</button>
+                               </div>
+                          </div>
+                      </div>
+                  )
+              }
+          };
+          return (
+              <div className="w-full max-w-4xl text-white">
+                  <Modal {...modal} />
+                  <div className="flex border-b border-white/20 flex-wrap">
+                      <TabButton tabName="overview" activeTab={activeTab} label="Genel Bakış" onClick={setActiveTab} />
+                      <TabButton tabName="entry" activeTab={activeTab} label="Veri Gir" onClick={setActiveTab} />
+                      <TabButton tabName="mystats" activeTab={activeTab} label="İstatistiklerim" onClick={setActiveTab} />
+                      <TabButton tabName="badges" activeTab={activeTab} label="Rozetlerim" onClick={setActiveTab} />
+                      <TabButton tabName="settings" activeTab={activeTab} label="Hesap Ayarları" onClick={setActiveTab} />
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-lg rounded-b-xl p-4 md:p-6 min-h-[300px]">
+                      {renderContent()}
+                  </div>
+              </div>
+          );
+      }
+
+      function CoachContent({ activeTab, userData, setToastMessage }) {
+        const [overviewData, setOverviewData] = useState(null);
+        const [myStudents, setMyStudents] = useState([]);
+        const [weeklyStats, setWeeklyStats] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [modal, setModal] = useState({ isOpen: false });
+
+        const fetchOverviewData = async () => {
+            setLoading(true);
+            try {
+                const studentQuery = db.collection('users').where('coachId', '==', userData.uid);
+                const studentSnapshot = await studentQuery.get();
+                if (studentSnapshot.empty) {
+                    setOverviewData({ overallRate: 0, starStudent: { name: '-', change: 0 }, needsAttention: { name: '-', change: 0 } });
+                    setLoading(false);
+                    return;
+                }
+                const studentPerformancePromises = studentSnapshot.docs.map(async (studentDoc) => {
+                    const student = studentDoc.data();
+                    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                    const fourteenDaysAgo = new Date(); fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+                    const thisWeekQuery = db.collection('entries').where('uid', '==', student.uid).where('date', '>=', sevenDaysAgo.toISOString().slice(0, 10));
+                    const lastWeekQuery = db.collection('entries').where('uid', '==', student.uid).where('date', '>=', fourteenDaysAgo.toISOString().slice(0, 10)).where('date', '<', sevenDaysAgo.toISOString().slice(0, 10));
+                    const [thisWeekSnapshot, lastWeekSnapshot] = await Promise.all([thisWeekQuery.get(), lastWeekQuery.get()]);
+                    let thisWeek = { solved: 0, correct: 0 };
+                    thisWeekSnapshot.forEach(d => { thisWeek.solved += d.data().solved; thisWeek.correct += d.data().correct; });
+                    let lastWeek = { solved: 0, correct: 0 };
+                    lastWeekSnapshot.forEach(d => { lastWeek.solved += d.data().solved; lastWeek.correct += d.data().correct; });
+                    const thisWeekRate = thisWeek.solved > 0 ? (thisWeek.correct / thisWeek.solved) * 100 : 0;
+                    const lastWeekRate = lastWeek.solved > 0 ? (lastWeek.correct / lastWeek.solved) * 100 : 0;
+                    return { name: student.name, thisWeek, change: lastWeekRate > 0 ? thisWeekRate - lastWeekRate : thisWeekRate };
+                });
+                const performances = await Promise.all(studentPerformancePromises);
+                let totalSolved = 0, totalCorrect = 0;
+                let starStudent = { name: '-', change: -Infinity };
+                let needsAttention = { name: '-', change: Infinity };
+                performances.forEach(p => {
+                    totalSolved += p.thisWeek.solved;
+                    totalCorrect += p.thisWeek.correct;
+                    if (p.change > starStudent.change) starStudent = p;
+                    if (p.change < needsAttention.change) needsAttention = p;
+                });
+                const overallRate = totalSolved > 0 ? (totalCorrect / totalSolved) * 100 : 0;
+                if (starStudent.change <= 0) starStudent = { name: 'Veri Yok', change: 0 };
+                if (needsAttention.change >= 0 && performances.length > 1) needsAttention = { name: 'Veri Yok', change: 0 };
+                setOverviewData({ overallRate, starStudent, needsAttention });
+            } catch (error) {
+                console.error("Error fetching overview data:", error);
+                setToastMessage("Genel bakış verileri yüklenemedi.", "error");
+            }
+            setLoading(false);
         };
 
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let currentUser = null;
-        let userData = null;
-        let isSignUpMode = false;
-        let chartInstance = null;
-        const ADMIN_EMAIL = "abdussametkrkmz@gmail.com";
-
-        
-        const authSection = document.getElementById('authSection');
-        const appSection = document.getElementById('appSection');
-        const emailInput = document.getElementById('emailInput');
-        const passwordInput = document.getElementById('passwordInput');
-        const nameInput = document.getElementById('nameInput');
-        const isCoachCheckbox = document.getElementById('isCoachCheckbox');
-        const coachSelect = document.getElementById('coachSelect');
-        const signUpBtn = document.getElementById('signUpBtn');
-        const signInBtn = document.getElementById('signInBtn');
-        const toggleModeBtn = document.getElementById('toggleModeBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const tabsContainer = document.getElementById('tabsContainer');
-        const contentContainer = document.getElementById('contentContainer');
-
-        
-        signUpBtn.addEventListener('click', handleSignUp);
-        signInBtn.addEventListener('click', handleSignIn);
-        toggleModeBtn.addEventListener('click', toggleAuthMode);
-        logoutBtn.addEventListener('click', handleSignOut);
-        isCoachCheckbox.addEventListener('change', handleCoachCheckboxChange);
-
-        function toggleAuthMode() {
-            isSignUpMode = !isSignUpMode;
-            document.getElementById('nameGroup').style.display = isSignUpMode ? 'block' : 'none';
-            document.getElementById('coachGroup').style.display = isSignUpMode ? 'block' : 'none';
-            signUpBtn.style.display = isSignUpMode ? 'block' : 'none';
-            signInBtn.style.display = isSignUpMode ? 'none' : 'block';
-            toggleModeBtn.textContent = isSignUpMode ? 'Zaten hesabım var, giriş yap' : 'Hesabım yok, kayıt ol';
-            if (isSignUpMode) {
-                loadApprovedCoaches();
-                handleCoachCheckboxChange();
-            } else {
-                 document.getElementById('selectCoachGroup').style.display = 'none';
-            }
-        }
-
-        function handleCoachCheckboxChange() {
-            const isCoach = isCoachCheckbox.checked;
-            document.getElementById('selectCoachGroup').style.display = isSignUpMode && !isCoach ? 'block' : 'none';
-        }
-
-        async function loadApprovedCoaches() {
+        const fetchMyStudents = async () => {
+            setLoading(true);
             try {
-                const q = query(collection(db, 'users'), where('role', '==', 'coach'), where('approved', '==', true));
-                const snapshot = await getDocs(q);
-                coachSelect.innerHTML = '<option value="">Koç seçin...</option>';
-                snapshot.forEach(docSnap => {
-                    const coach = docSnap.data();
-                    const option = document.createElement('option');
-                    option.value = coach.uid;
-                    option.textContent = coach.name;
-                    coachSelect.appendChild(option);
-                });
+                const q = db.collection('users').where('coachId', '==', userData.uid);
+                const snapshot = await q.get();
+                const studentsList = await Promise.all(snapshot.docs.map(async (d) => {
+                    const student = { docId: d.id, ...d.data() };
+                    const statsQuery = db.collection('entries').where('uid', '==', student.uid);
+                    const statsSnapshot = await statsQuery.get();
+                    let total = 0, correct = 0, wrong = 0;
+                    statsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        total += data.solved || 0;
+                        correct += data.correct || 0;
+                        wrong += data.wrong || 0;
+                    });
+                    student.stats = { total, correct, wrong };
+                    return student;
+                }));
+                setMyStudents(studentsList);
             } catch (error) {
-                showMessage('Koçlar yüklenemedi: ' + error.message, 'error', 'auth');
+                setToastMessage('Öğrencileriniz yüklenemedi: ' + error.message, 'error');
             }
-        }
+            setLoading(false);
+        };
 
-        async function handleSignUp() {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            const name = nameInput.value.trim();
-            const isCoach = isCoachCheckbox.checked;
-            const selectedCoach = coachSelect.value;
-            if (!email || !password || !name) { showMessage('Lütfen tüm alanları doldurun', 'error', 'auth'); return; }
-            if (!isCoach && !selectedCoach) { showMessage('Lütfen bir koç seçin', 'error', 'auth'); return; }
+        const fetchMyStats = async () => {
+            setLoading(true);
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await addDoc(collection(db, 'users'), {
-                    uid: userCredential.user.uid, email: email, name: name,
-                    role: isCoach ? 'coach' : 'student',
-                    approved: isCoach ? false : true,
-                    coachId: isCoach ? null : selectedCoach,
-                    createdAt: Timestamp.now()
-                });
-                showMessage(isCoach ? 'Kayıt başarılı! Hesabınızın yönetici tarafından onaylanması gerekiyor.' : 'Kayıt başarılı! Giriş yapabilirsiniz.', 'success', 'auth');
-                toggleAuthMode();
-            } catch (error) { showMessage('Kayıt hatası: ' + error.message, 'error', 'auth'); }
-        }
-
-        async function handleSignIn() {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            if (!email || !password) { showMessage('Lütfen e-posta ve şifre girin', 'error', 'auth'); return; }
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) { showMessage('Giriş başarısız: ' + error.message, 'error', 'auth'); }
-        }
-
-        async function handleSignOut() {
-            try { await fbSignOut(auth); window.location.reload(); }
-            catch (error) { showMessage('Çıkış yapılamadı', 'error', 'app'); }
-        }
-
-        function showMessage(msg, type, section) {
-            const messageDiv = section === 'auth' ? document.getElementById('authMessage') : document.getElementById('appMessage');
-            messageDiv.className = type;
-            messageDiv.textContent = msg;
-            setTimeout(() => { if (messageDiv.textContent === msg) { messageDiv.textContent = ''; } }, 5000);
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                const q = query(collection(db, 'users'), where('uid', '==', user.uid));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) { showMessage('Kullanıcı veritabanında bulunamadı', 'error', 'app'); await fbSignOut(auth); return; }
-                userData = snapshot.docs[0].data();
-                userData.docId = snapshot.docs[0].id;
-                if (user.email === ADMIN_EMAIL) { userData.role = 'admin'; userData.approved = true; }
-                if (userData.role === 'coach' && !userData.approved) { alert('Hesabınız henüz yönetici tarafından onaylanmadı.'); await fbSignOut(auth); return; }
-                document.getElementById('userName').textContent = userData.name;
-                document.getElementById('userEmail').textContent = user.email;
-                let roleText = '', roleClass = '';
-                if (userData.role === 'admin') { roleText = 'ADMİN'; roleClass = 'role-admin'; }
-                else if (userData.role === 'coach') { roleText = 'KOÇ'; roleClass = 'role-coach'; }
-                else { roleText = 'ÖĞRENCİ'; roleClass = 'role-student'; }
-                document.getElementById('userRole').innerHTML = `<span class="role-badge ${roleClass}">${roleText}</span>`;
-                authSection.classList.remove('active');
-                appSection.classList.add('active');
-                loadUserInterface();
-            } else {
-                currentUser = null; userData = null;
-                authSection.classList.add('active');
-                appSection.classList.remove('active');
+                const studentQuery = db.collection('users').where('coachId', '==', userData.uid);
+                const studentSnapshot = await studentQuery.get();
+                if (studentSnapshot.empty) { setWeeklyStats({}); setLoading(false); return; }
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+                const studentStatsData = {};
+                for (const studentDoc of studentSnapshot.docs) {
+                    const student = studentDoc.data();
+                    const entriesQuery = db.collection('entries').where('uid', '==', student.uid).where('date', '>=', sevenDaysAgoStr);
+                    const previousStats = await getPreviousWeekStats(student.uid);
+                    const entriesSnapshot = await entriesQuery.get();
+                    if (!entriesSnapshot.empty) {
+                        studentStatsData[student.name] = { uid: student.uid, subjects: {}, previousStats };
+                        entriesSnapshot.forEach(doc => {
+                            const entry = doc.data();
+                            if (!studentStatsData[student.name].subjects[entry.subject]) {
+                                studentStatsData[student.name].subjects[entry.subject] = { solved: 0, correct: 0, wrong: 0 };
+                            }
+                            const subjectStats = studentStatsData[student.name].subjects[entry.subject];
+                            subjectStats.solved += entry.solved;
+                            subjectStats.correct += entry.correct;
+                            subjectStats.wrong += entry.wrong;
+                        });
+                    }
+                }
+                setWeeklyStats(studentStatsData);
+            } catch (error) {
+                 setToastMessage('Haftalık istatistikler yüklenemedi: ' + error.message, 'error');
             }
-        });
+            setLoading(false);
+        };
 
-        function loadUserInterface() {
-            if (userData.role === 'admin') loadAdminInterface();
-            else if (userData.role === 'coach') loadCoachInterface();
-            else loadStudentInterface();
-        }
+        useEffect(() => {
+            if (activeTab === 'overview') fetchOverviewData();
+            else if (activeTab === 'myStudents') fetchMyStudents();
+            else if (activeTab === 'myStats') fetchMyStats();
+        }, [activeTab, userData]);
 
-        function setupTabEvents(callback, selector = '.tab') {
-            document.querySelectorAll(selector).forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    document.querySelectorAll(selector).forEach(t => t.classList.remove('active'));
-                    e.target.classList.add('active');
-                    callback(e.target.dataset.tab);
-                });
-            });
-        }
+        const handleDeleteStudent = (student) => {
+            setModal({ isOpen: true, title: 'Öğrenciyi Sil', message: `DİKKAT! '${student.name}' adlı öğrenciyi ve öğrenciye ait TÜM soru kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz?`, onConfirm: () => confirmDeleteStudent(student), onCancel: () => setModal({ isOpen: false }), confirmText: "Evet, Hepsini Sil" });
+        };
 
-        function loadAdminInterface() {
-            tabsContainer.innerHTML = `
-                <div class="tabs">
-                    <button class="tab active" data-tab="mystudents">Öğrencilerim</button>
-                    <button class="tab" data-tab="mystats">Haftalık İstatistikler</button>
-                    <button class="tab" data-tab="allcoaches">Tüm Koçlar</button>
-                    <button class="tab" data-tab="pending">Onay Bekleyenler</button>
-                </div>`;
-            setupTabEvents(showAdminTab);
-            showAdminTab('mystudents');
-        }
-
-        async function showAdminTab(tabName) {
-            contentContainer.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            if (tabName === 'mystudents') await loadMyStudents();
-            else if (tabName === 'mystats') await loadCoachStats(currentUser.uid, contentContainer);
-            else if (tabName === 'allcoaches') await window.loadAllCoaches();
-            else if (tabName === 'pending') await loadPendingCoaches();
-        }
+        const confirmDeleteStudent = async (student) => {
+            try {
+                const batch = db.batch();
+                const entriesQuery = db.collection('entries').where('uid', '==', student.uid);
+                const entriesSnapshot = await entriesQuery.get();
+                entriesSnapshot.forEach(d => batch.delete(d.ref));
+                batch.delete(db.collection('users').doc(student.docId));
+                await batch.commit();
+                setToastMessage('Öğrenci ve tüm verileri silindi.', 'success');
+                fetchMyStudents();
+            } catch (error) {
+                 setToastMessage('Öğrenci silme hatası: ' + error.message, 'error');
+            } finally {
+                setModal({ isOpen: false });
+            }
+        };
         
-        function loadCoachInterface() {
-            tabsContainer.innerHTML = `
-                <div class="tabs">
-                    <button class="tab active" data-tab="mystudents">Öğrencilerim</button>
-                    <button class="tab" data-tab="mystats">Haftalık İstatistikler</button>
-                </div>`;
-            setupTabEvents(showCoachTab);
-            showCoachTab('mystudents');
-        }
+        if (loading) return <div className="text-center p-10 text-white">Yükleniyor...</div>;
 
-        async function showCoachTab(tabName) {
-            if (tabName === 'mystudents') await loadMyStudents();
-            else if (tabName === 'mystats') await loadCoachStats(currentUser.uid, contentContainer);
-        }
-
-
-
-        function loadStudentInterface() {
-            tabsContainer.innerHTML = `<div class="tabs"><button class="tab active" data-tab="entry">Veri Gir</button><button class="tab" data-tab="mystats">İstatistiklerim</button></div>`;
-            setupTabEvents(showStudentTab);
-            showStudentTab('entry');
-        }
-
-        async function showStudentTab(tabName) {
-            contentContainer.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            if (tabName === 'entry') loadEntryForm();
-            else if (tabName === 'mystats') await loadMyStats();
-        }
-
-        function loadEntryForm() {
-            contentContainer.innerHTML = `
-                <div class="input-group"><label>Ders</label><select id="subjectInput">
-                    <option value="">Ders seçin</option><option value="Türkçe">Türkçe</option><option value="Matematik">Matematik</option><option value="Fizik">Fizik</option><option value="Kimya">Kimya</option><option value="Biyoloji">Biyoloji</option><option value="Tarih">Tarih</option><option value="Coğrafya">Coğrafya</option><option value="Din Kültürü">Din Kültürü</option><option value="Felsefe">Felsefe</option><option value="Deneme Sınavı">Deneme Sınavı</option>
-                </select></div>
-                <div class="input-group"><label>Tarih</label><input type="date" id="dateInput"></div>
-                <div class="input-group"><label>Çözülen Soru</label><input type="number" id="solvedInput" min="0" placeholder="0"></div>
-                <div class="input-group"><label>Doğru</label><input type="number" id="correctInput" min="0" placeholder="0"></div>
-                <div class="input-group"><label>Yanlış</label><input type="number" id="wrongInput" min="0" placeholder="0"></div>
-                <button id="saveEntryBtn">Kaydet</button>
-                <div id="entriesList" style="margin-top: 30px;"></div>
-            `;
-            document.getElementById('dateInput').valueAsDate = new Date();
-            document.getElementById('saveEntryBtn').addEventListener('click', saveEntry);
-            loadMyEntries();
-        }
-
-        async function saveEntry() {
-            const subject = document.getElementById('subjectInput').value;
-            const date = document.getElementById('dateInput').value;
-            const solved = parseInt(document.getElementById('solvedInput').value) || 0;
-            const correct = parseInt(document.getElementById('correctInput').value) || 0;
-            const wrong = parseInt(document.getElementById('wrongInput').value) || 0;
-
-            if (!subject || !date || solved === 0) { showMessage('Lütfen tüm alanları eksiksiz doldurun.', 'error', 'app'); return; }
-            if(correct + wrong > solved) { showMessage('Doğru ve yanlış sayısı toplamı, çözülen soru sayısından fazla olamaz.', 'error', 'app'); return; }
-
-            try {
-                await addDoc(collection(db, 'entries'), {
-                    uid: currentUser.uid, subject, date, solved, correct, wrong,
-                    createdAt: Timestamp.now()
-                });
-                loadEntryForm();
-                showMessage('Kayıt eklendi!', 'success', 'app');
-            } catch (error) { showMessage('Hata: ' + error.message, 'error', 'app'); }
-        }
-
-        async function loadMyEntries() {
-            const entriesList = document.getElementById('entriesList');
-            if (!entriesList) return;
-            entriesList.innerHTML = '<div class="loading">Kayıtlar yükleniyor...</div>';
-            const q = query(collection(db, 'entries'), where('uid', '==', currentUser.uid));
-            const snapshot = await getDocs(q);
-            
-            if (snapshot.empty) {
-                entriesList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Henüz kayıt yok</p>'; return;
-            }
-
-            let entries = [];
-            snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
-            entries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
-            let html = '<h3 style="margin-bottom: 15px;">Son Kayıtlarım</h3>';
-            entries.forEach(entry => {
-                html += `
-                    <div class="card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                                <strong>${entry.date}</strong>
-                                <span style="margin-left:10px;background:#667eea;color:white;padding:4px 10px;border-radius:15px;font-size:12px;">${entry.subject}</span>
-                            </div>
-                            <button class="btn-small btn-danger" onclick="window.deleteEntry('${entry.id}')">Sil</button>
+        switch (activeTab) {
+            case 'overview':
+                if (!overviewData) return null;
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-indigo-500/20 border border-indigo-500 p-4 rounded-lg text-center">
+                            <h5 className="font-bold">📊 Genel Başarı</h5>
+                            <p className="text-4xl font-bold mt-2 text-white">{overviewData.overallRate.toFixed(0)}%</p>
+                            <p className="text-sm text-indigo-300">Son 7 Gün</p>
                         </div>
-                        <div class="stats-info">
-                            <span>📝 ${entry.solved} soru</span><span>✅ ${entry.correct} doğru</span><span>❌ ${entry.wrong} yanlış</span>
+                        <div className="bg-green-500/20 border border-green-500 p-4 rounded-lg text-center">
+                            <h5 className="font-bold">⭐ Haftanın Yıldızı</h5>
+                            <p className="text-2xl font-bold mt-2 text-white">{overviewData.starStudent.name}</p>
+                            <p className="text-sm text-green-300">{overviewData.starStudent.change > 0 ? `%${overviewData.starStudent.change.toFixed(0)} artış` : 'İlerleme yok'}</p>
+                        </div>
+                        <div className="bg-yellow-500/20 border border-yellow-500 p-4 rounded-lg text-center">
+                            <h5 className="font-bold">⚠️ Yakından İlgilen</h5>
+                            <p className="text-2xl font-bold mt-2 text-white">{overviewData.needsAttention.name}</p>
+                            <p className="text-sm text-yellow-300">{overviewData.needsAttention.change < 0 ? `%${overviewData.needsAttention.change.toFixed(0)} düşüş` : 'Düşüş yok'}</p>
                         </div>
                     </div>
-                `;
-            });
-            entriesList.innerHTML = html;
-        }
+                );
 
-        async function loadMyStats() {
-            contentContainer.innerHTML = '<h3>İstatistiklerim</h3><div class="loading">Yükleniyor...</div>';
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-            const weeklyQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid), where('date', '>=', sevenDaysAgoStr));
-            const weeklySnapshot = await getDocs(weeklyQuery);
-            const allQuery = query(collection(db, 'entries'), where('uid', '==', currentUser.uid));
-            const allSnapshot = await getDocs(allQuery);
-
-            let total = 0, correct = 0, wrong = 0;
-            const subjectData = {};
-            const weeklySubjectData = {};
-
-            allSnapshot.forEach(doc => {
-                const data = doc.data();
-                total += data.solved || 0;
-                correct += data.correct || 0;
-                wrong += data.wrong || 0;
-                if (!subjectData[data.subject]) { subjectData[data.subject] = { solved: 0 }; }
-                subjectData[data.subject].solved += data.solved;
-            });
-
-            weeklySnapshot.forEach(doc => {
-                const data = doc.data();
-                if (!weeklySubjectData[data.subject]) {
-                    weeklySubjectData[data.subject] = { solved: 0, correct: 0, wrong: 0 };
-                }
-                weeklySubjectData[data.subject].solved += data.solved;
-                weeklySubjectData[data.subject].correct += data.correct;
-                weeklySubjectData[data.subject].wrong += data.wrong;
-            });
-
-            const previousStats = await getPreviousWeekStats(currentUser.uid);
-            let weeklyHtml = '';
-            for (const subject in weeklySubjectData) {
-                const stats = weeklySubjectData[subject];
-                const successRate = stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0;
-                const prevRate = previousStats[subject] || 0;
-                const improvement = successRate - prevRate;
-                let improvementText = '';
-                if (prevRate > 0) {
-                    if (improvement > 0) {
-                        improvementText = `<div style="color: #10b981; font-size: 13px; margin-top: 5px;">🎉 Harika! Geçen haftaya göre %${improvement} daha iyi! Devam et!</div>`;
-                    } else if (improvement < 0) {
-                        improvementText = `<div style="color: #f59e0b; font-size: 13px; margin-top: 5px;">💪 Geçen haftaya göre %${Math.abs(improvement)} düşüş. Biraz daha çaba göster, başarabilirsin!</div>`;
-                    } else {
-                        improvementText = `<div style="color: #3b82f6; font-size: 13px; margin-top: 5px;">🎯 Stabil performans! Bir sonraki hafta daha iyisini yapabilirsin!</div>`;
-                    }
-                }
-                weeklyHtml += `
-                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                        <strong style="color: #667eea;">${subject}</strong>
-                        <div class="stats-info" style="margin-top: 5px;">
-                            <span>📝 Soru: ${stats.solved}</span>
-                            <span>✅ Doğru: ${stats.correct}</span>
-                            <span>❌ Yanlış: ${stats.wrong}</span>
-                            <span>🎯 Başarı: %${successRate}</span>
-                        </div>
-                        ${improvementText}
-                    </div>`;
-            }
-
-            let html = `
-                <div class="card"><h3>Genel Toplam</h3><div class="stats-info" style="margin-top:15px;">
-                    <span>📝 ${total} soru</span><span>✅ ${correct} doğru</span><span>❌ ${wrong} yanlış</span>
-                    <span>🎯 ${total > 0 ? Math.round((correct/total)*100) : 0}% başarı</span>
-                </div></div>
-                <div class="card"><h3>Son 1 Haftalık Performans</h3>${weeklyHtml || '<p style="color:#999;padding:10px;">Son 1 haftada veri yok</p>'}</div>
-                <div class="card"><h3>Derslere Göre Soru Dağılımı</h3>
-                    <div class="chart-container"><canvas id="myStatsChart"></canvas></div>
-                </div>
-            `;
-            contentContainer.innerHTML = html;
-            
-            if(Object.keys(subjectData).length > 0) { createChart('myStatsChart', subjectData); }
-            
-            const statsToSave = {};
-            for (const subject in weeklySubjectData) {
-                const subData = weeklySubjectData[subject];
-                statsToSave[subject] = subData.solved > 0 ? Math.round((subData.correct/subData.solved)*100) : 0;
-            }
-            const q = query(collection(db, 'weeklyStats'), where('uid', '==', currentUser.uid));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) {
-                await addDoc(collection(db, 'weeklyStats'), { uid: currentUser.uid, stats: statsToSave, updatedAt: Timestamp.now() });
-            } else {
-                await updateDoc(doc(db, 'weeklyStats', snapshot.docs[0].id), { stats: statsToSave, updatedAt: Timestamp.now() });
-            }
-        }
-        
-        function createChart(canvasId, subjectData) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-            if (chartInstance) { chartInstance.destroy(); }
-            
-            const labels = Object.keys(subjectData);
-            const data = labels.map(label => subjectData[label].solved);
-
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: labels, datasets: [{
-                    label: 'Çözülen Soru Sayısı', data: data,
-                    backgroundColor: ['rgba(255, 99, 132, 0.5)','rgba(54, 162, 235, 0.5)','rgba(255, 206, 86, 0.5)','rgba(75, 192, 192, 0.5)','rgba(153, 102, 255, 0.5)','rgba(255, 159, 64, 0.5)'],
-                    borderColor: ['rgba(255, 99, 132, 1)','rgba(54, 162, 235, 1)','rgba(255, 206, 86, 1)','rgba(75, 192, 192, 1)','rgba(153, 102, 255, 1)','rgba(255, 159, 64, 1)'],
-                    borderWidth: 1
-                }]},
-                options: { scales: { y: { beginAtZero: true } } }
-            });
-        }
-
-        async function loadMyStudents() {
-            contentContainer.innerHTML = '<div class="loading">Yükleniyor...</div>';
-            const q = query(collection(db, 'users'), where('coachId', '==', currentUser.uid));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) { contentContainer.innerHTML = '<h3>Öğrencilerim</h3><p style="text-align:center;color:#999;padding:20px;">Henüz öğrenciniz yok.</p>'; return; }
-            let html = '<h3>Öğrencilerim</h3>';
-            for (const docSnap of snapshot.docs) {
-                const student = docSnap.data();
-                const stats = await getStudentStats(student.uid);
-                html += `
-                    <div class="card">
-                        <div class="card-title">${student.name}<button class="btn-small btn-danger" onclick="window.deleteStudent('${docSnap.id}', '${student.name}', '${student.uid}')">Öğrenciyi Sil</button></div>
-                        <div style="font-size: 13px; color: #999;">${student.email}</div>
-                        <div class="stats-info">
-                            <span>📝 ${stats.total} soru</span><span>✅ ${stats.correct} doğru</span><span>❌ ${stats.wrong} yanlış</span>
-                            <span>🎯 ${stats.total > 0 ? Math.round((stats.correct/stats.total)*100) : 0}% başarı</span>
-                        </div>
-                    </div>`;
-            }
-            contentContainer.innerHTML = html;
-        }
-        
-        window.loadAllCoaches = async function() {
-            contentContainer.innerHTML = '<h3>Tüm Koçlar</h3><div class="loading">Yükleniyor...</div>';
-            const q = query(collection(db, 'users'), where('role', '==', 'coach'), where('approved', '==', true));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) { contentContainer.innerHTML = '<h3>Tüm Koçlar</h3><p style="text-align:center;color:#999;padding:20px;">Sistemde onaylı koç bulunmuyor.</p>'; return; }
-            let html = '<h3>Tüm Koçlar</h3>';
-            for (const docSnap of snapshot.docs) {
-                const coach = docSnap.data();
-                const studentCount = await getCoachStudentCount(coach.uid);
-                html += `
-                    <div class="card">
-                        <div class="card-title">
-                            <span class="clickable-title" onclick="window.showCoachDetailView('${coach.uid}', '${coach.name}')">${coach.name}</span>
-                            ${coach.email !== ADMIN_EMAIL ? `<button class="btn-small btn-danger" onclick="window.deleteCoach('${docSnap.id}', '${coach.name}')">Koçu Sil</button>` : ''}
-                        </div>
-                        <div style="font-size: 13px; color: #999; margin-bottom: 10px;">${coach.email}</div>
-                        <div class="stats-info"><span>👥 ${studentCount} öğrenci</span></div>
-                    </div>`;
-            }
-            contentContainer.innerHTML = html;
-        }
-
-        async function loadPendingCoaches() {
-            contentContainer.innerHTML = '<h3>Onay Bekleyen Koçlar</h3><div class="loading">Yükleniyor...</div>';
-            const q = query(collection(db, 'users'), where('role', '==', 'coach'), where('approved', '==', false));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) { contentContainer.innerHTML = '<h3>Onay Bekleyen Koçlar</h3><p style="text-align:center;color:#999;padding:20px;">Onay bekleyen koç yok.</p>'; return; }
-            let html = '<h3>Onay Bekleyen Koçlar</h3>';
-            snapshot.forEach(docSnap => {
-                const coach = docSnap.data();
-                html += `
-                    <div class="card">
-                        <div class="card-title">${coach.name} <span class="role-badge role-pending">ONAY BEKLİYOR</span></div>
-                        <div style="font-size: 13px; color: #999; margin-bottom: 10px;">${coach.email}</div>
-                        <button class="btn-small btn-success" onclick="window.approveCoach('${docSnap.id}', '${coach.name}')">Onayla</button>
-                        <button class="btn-small btn-danger" onclick="window.rejectCoach('${docSnap.id}', '${coach.name}')">Reddet</button>
-                    </div>`;
-            });
-            contentContainer.innerHTML = html;
-        }
-        
-
-
-        async function getStudentStats(uid) {
-            const q = query(collection(db, 'entries'), where('uid', '==', uid));
-            const snapshot = await getDocs(q);
-            let total = 0, correct = 0, wrong = 0;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                total += data.solved || 0;
-                correct += data.correct || 0;
-                wrong += data.wrong || 0;
-            });
-            return { total, correct, wrong };
-        }
-
-        async function getCoachStudentCount(coachId) {
-            const q = query(collection(db, 'users'), where('coachId', '==', coachId));
-            const snapshot = await getDocs(q);
-            return snapshot.size;
-        }
-
-        window.deleteEntry = async function(entryId) {
-            if (!confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
-            try { await deleteDoc(doc(db, 'entries', entryId)); showMessage('Kayıt silindi.', 'success', 'app'); loadMyEntries(); }
-            catch (error) { showMessage('Silme hatası: ' + error.message, 'error', 'app'); }
-        };
-
-        window.approveCoach = async function(docId, name) {
-            if (!confirm(`'${name}' adlı öğretmeni onaylıyor musunuz?`)) return;
-            try { await updateDoc(doc(db, 'users', docId), { approved: true }); showMessage('Koç onaylandı.', 'success', 'app'); loadPendingCoaches(); }
-            catch (error) { showMessage('Onaylama hatası: ' + error.message, 'error', 'app'); }
-        };
-
-        window.rejectCoach = async function(docId, name) {
-            if (!confirm(`'${name}' adlı öğretmeni reddetmek istediğinizden emin misiniz? Bu işlem kullanıcının kaydını silecektir.`)) return;
-            try { await deleteDoc(doc(db, 'users', docId)); showMessage('Koç kaydı reddedildi ve silindi.', 'success', 'app'); loadPendingCoaches(); }
-            catch (error) { showMessage('Reddetme hatası: ' + error.message, 'error', 'app'); }
-        };
-
-        window.deleteCoach = async function(docId, name) {
-            if (!confirm(`DİKKAT! '${name}' adlı koçu silmek üzeresiniz. Bu işlem geri alınamaz. Bu koça bağlı öğrenciler sahipsiz kalacaktır. Devam edilsin mi?`)) return;
-            try { await deleteDoc(doc(db, 'users', docId)); showMessage('Koç silindi.', 'success', 'app'); window.loadAllCoaches(); }
-            catch (error) { showMessage('Silme hatası: ' + error.message, 'error', 'app'); }
-        }
-
-        window.deleteStudent = async function(docId, name, studentUid) {
-            if (!confirm(`DİKKAT! '${name}' adlı öğrenciyi ve öğrenciye ait TÜM soru kayıtlarını kalıcı olarak silmek istediğinizden emin misiniz?`)) return;
-            try {
-                const batch = writeBatch(db);
-                const entriesQuery = query(collection(db, 'entries'), where('uid', '==', studentUid));
-                const entriesSnapshot = await getDocs(entriesQuery);
-                entriesSnapshot.forEach(doc => { batch.delete(doc.ref); });
-                const userDocRef = doc(db, 'users', docId);
-                batch.delete(userDocRef);
-                await batch.commit();
-                showMessage('Öğrenci ve tüm verileri silindi.', 'success', 'app');
-                loadMyStudents();
-            } catch (error) { showMessage('Öğrenci silme hatası: ' + error.message, 'error', 'app'); }
-        };
-
-        async function loadCoachStats(coachUid, container) {
-            container.innerHTML = '<div class="loading">İstatistikler hesaplanıyor...</div>';
-            const studentQuery = query(collection(db, 'users'), where('coachId', '==', coachUid));
-            const studentSnapshot = await getDocs(studentQuery);
-            if (studentSnapshot.empty) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">İstatistik gösterecek öğrenci bulunmuyor.</p>'; return; }
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-            const studentStats = {};
-            for (const studentDoc of studentSnapshot.docs) {
-                const student = studentDoc.data();
-                const entriesQuery = query(collection(db, 'entries'), where('uid', '==', student.uid), where('date', '>=', sevenDaysAgoStr));
-                const entriesSnapshot = await getDocs(entriesQuery);
-                if (!entriesSnapshot.empty) {
-                    studentStats[student.name] = { uid: student.uid, subjects: {} };
-                    entriesSnapshot.forEach(doc => {
-                        const entry = doc.data();
-                        if (!studentStats[student.name].subjects[entry.subject]) {
-                            studentStats[student.name].subjects[entry.subject] = { solved: 0, correct: 0, wrong: 0 };
-                        }
-                        studentStats[student.name].subjects[entry.subject].solved += entry.solved;
-                        studentStats[student.name].subjects[entry.subject].correct += entry.correct;
-                        studentStats[student.name].subjects[entry.subject].wrong += entry.wrong;
-                    });
-                }
-            }
-            if (Object.keys(studentStats).length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Öğrencileriniz son 1 hafta içinde hiç soru girişi yapmamış.</p>'; return; }
-            let html = '<h4>Son 1 Haftalık Öğrenci Performansı</h4>';
-            for (const studentName in studentStats) {
-                html += `<div class="card"><div class="card-title">${studentName}</div>`;
-                const previousStats = await getPreviousWeekStats(studentStats[studentName].uid);
-                for (const subject in studentStats[studentName].subjects) {
-                    const stats = studentStats[studentName].subjects[subject];
-                    const successRate = stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0;
-                    const prevRate = previousStats[subject] || 0;
-                    const improvement = successRate - prevRate;
-                    let improvementText = '';
-                    if (prevRate > 0) {
-                        if (improvement > 0) {
-                            improvementText = `<div style="color: #10b981; font-size: 13px; margin-top: 5px;">🎉 Harika! Geçen haftaya göre %${improvement} daha iyi! Devam et!</div>`;
-                        } else if (improvement < 0) {
-                            improvementText = `<div style="color: #f59e0b; font-size: 13px; margin-top: 5px;">💪 Geçen haftaya göre %${Math.abs(improvement)} düşüş. Biraz daha çaba göster, başarabilirsin!</div>`;
-                        } else {
-                            improvementText = `<div style="color: #3b82f6; font-size: 13px; margin-top: 5px;">🎯 Stabil performans! Bir sonraki hafta daha iyisini yapabilirsin!</div>`;
-                        }
-                    }
-                    html += `
-                        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                            <strong style="color: #667eea;">${subject}</strong>
-                            <div class="stats-info" style="margin-top: 5px;">
-                                <span>📝 Soru: ${stats.solved}</span>
-                                <span>✅ Doğru: ${stats.correct}</span>
-                                <span>❌ Yanlış: ${stats.wrong}</span>
-                                <span>🎯 Başarı: %${successRate}</span>
+            case 'myStudents':
+                if (myStudents.length === 0) return <div className="text-center p-10 text-gray-400">Henüz öğrenciniz yok.</div>;
+                return (
+                    <div className="space-y-4">
+                        <Modal {...modal} />
+                        {myStudents.map(student => (
+                            <div key={student.docId} className="bg-white/10 p-4 rounded-lg">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-white text-lg">{student.name}</p>
+                                        <p className="text-sm text-gray-300">{student.email}</p>
+                                    </div>
+                                    <button onClick={() => handleDeleteStudent(student)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm">Sil</button>
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-200">
+                                    <span>📝 Toplam: {student.stats.total}</span>
+                                    <span className="text-green-400">✅ Doğru: {student.stats.correct}</span>
+                                    <span className="text-red-400">❌ Yanlış: {student.stats.wrong}</span>
+                                    <span>🎯 Başarı: {student.stats.total > 0 ? Math.round((student.stats.correct/student.stats.total)*100) : 0}%</span>
+                                </div>
                             </div>
-                            ${improvementText}
-                        </div>`;
-                }
-                html += '</div>';
-            }
-            container.innerHTML = html;
-            await saveWeeklyStats(studentStats);
-        }
+                        ))}
+                    </div>
+                );
 
-        async function getPreviousWeekStats(uid) {
-            const q = query(collection(db, 'weeklyStats'), where('uid', '==', uid));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) return {};
-            const data = snapshot.docs[0].data();
-            return data.stats || {};
+            case 'myStats':
+                if (!weeklyStats || Object.keys(weeklyStats).length === 0) return <div className="text-center p-10 text-gray-400">Öğrencileriniz son 1 hafta içinde hiç soru girişi yapmamış.</div>;
+                return (
+                    <div className="space-y-6">
+                        {Object.entries(weeklyStats).map(([studentName, data]) => (
+                            <div key={studentName} className="bg-white/10 p-4 rounded-lg">
+                                <h4 className="text-lg font-bold text-white mb-3">{studentName}</h4>
+                                <div className="space-y-3">
+                                    {data.subjects && Object.keys(data.subjects).length > 0 ? Object.entries(data.subjects).map(([subject, stats]) => {
+                                        const successRate = stats.solved > 0 ? Math.round((stats.correct/stats.solved)*100) : 0;
+                                        const prevRate = data.previousStats ? data.previousStats[subject] : 0;
+                                        return (
+                                            <div key={subject} className="bg-black/20 p-3 rounded-md">
+                                                <p className="font-semibold text-indigo-300">{subject}</p>
+                                                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+                                                    <span>📝 Soru: {stats.solved}</span>
+                                                    <span className="text-green-400">✅ D: {stats.correct}</span>
+                                                    <span className="text-red-400">❌ Y: {stats.wrong}</span>
+                                                    <span>🎯 B: %{successRate}</span>
+                                                </div>
+                                                <ImprovementMessage currentRate={successRate} prevRate={prevRate} />
+                                            </div>
+                                        )
+                                    }) : <p className="text-sm text-gray-400">Bu öğrenci için veri yok.</p>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            default: return null;
         }
+      }
 
-        async function saveWeeklyStats(studentStats) {
-            for (const studentName in studentStats) {
-                const uid = studentStats[studentName].uid;
-                const stats = {};
-                for (const subject in studentStats[studentName].subjects) {
-                    const subjectData = studentStats[studentName].subjects[subject];
-                    stats[subject] = subjectData.solved > 0 ? Math.round((subjectData.correct/subjectData.solved)*100) : 0;
-                }
-                const q = query(collection(db, 'weeklyStats'), where('uid', '==', uid));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) {
-                    await addDoc(collection(db, 'weeklyStats'), { uid, stats, updatedAt: Timestamp.now() });
-                } else {
-                    await updateDoc(doc(db, 'weeklyStats', snapshot.docs[0].id), { stats, updatedAt: Timestamp.now() });
-                }
-            }
-        }
+      function CoachDashboard({ userData, setToastMessage }) {
+          const [activeTab, setActiveTab] = useState('overview');
+          
+          return (
+              <div className="w-full max-w-4xl text-white">
+                  <div className="flex border-b border-white/20 flex-wrap">
+                      <TabButton tabName="overview" activeTab={activeTab} label="Genel Bakış" onClick={setActiveTab} />
+                      <TabButton tabName="myStudents" activeTab={activeTab} label="Öğrencilerim" onClick={setActiveTab} />
+                      <TabButton tabName="myStats" activeTab={activeTab} label="Haftalık İstatistikler" onClick={setActiveTab} />
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-lg rounded-b-xl p-4 md:p-6 min-h-[300px]">
+                      <CoachContent activeTab={activeTab} userData={userData} setToastMessage={setToastMessage} />
+                  </div>
+              </div>
+          );
+      }
 
-        window.showCoachDetailView = async function(coachUid, coachName) {
-            contentContainer.innerHTML = `
-                <button class="btn-secondary btn-small" style="margin-bottom: 15px;" onclick="window.loadAllCoaches()">‹ Tüm Koçlara Geri Dön</button>
-                <h3>${coachName}</h3>
-                <div class="sub-tabs">
-                    <button class="sub-tab active" data-tab="students">Öğrenciler</button>
-                    <button class="sub-tab" data-tab="stats">Haftalık İstatistikler</button>
-                </div>
-                <div id="coachDetailContent"><div class="loading">Yükleniyor...</div></div>`;
-            const coachDetailContent = document.getElementById('coachDetailContent');
-            const showDetailTab = async (tabName) => {
-                coachDetailContent.innerHTML = '<div class="loading">Yükleniyor...</div>';
-                if (tabName === 'students') {
-                    await loadCoachStudents(coachUid, coachDetailContent);
-                } else if (tabName === 'stats') {
-                    await loadCoachStats(coachUid, coachDetailContent);
-                }
-            };
-            setupTabEvents(showDetailTab, '.sub-tab');
-            await showDetailTab('students');
-        };
-        
-        async function loadCoachStudents(coachUid, container) {
-            container.innerHTML = '<div class="loading">Öğrenciler yükleniyor...</div>';
-            const q = query(collection(db, 'users'), where('coachId', '==', coachUid));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Bu koça atanmış öğrenci yok.</p>'; return; }
-            let html = '';
-            for (const docSnap of snapshot.docs) {
-                const student = docSnap.data();
-                const stats = await getStudentStats(student.uid);
-                html += `
-                    <div class="card">
-                        <div class="card-title">${student.name}</div>
-                        <div style="font-size: 13px; color: #999;">${student.email}</div>
-                        <div class="stats-info">
-                           <span>📝 ${stats.total} soru</span><span>✅ ${stats.correct} doğru</span><span>❌ ${stats.wrong} yanlış</span>
-                        </div>
-                    </div>`;
-            }
-            container.innerHTML = html;
-        }
+      function AdminDashboard({ userData, setToastMessage }) {
+          const [activeTab, setActiveTab] = useState('overview');
+          const [modal, setModal] = useState({ isOpen: false });
+          const [loading, setLoading] = useState(false);
+          const [viewingCoach, setViewingCoach] = useState(null);
+          const [pendingCoaches, setPendingCoaches] = useState([]);
+          const [allCoaches, setAllCoaches] = useState([]);
 
+          const fetchPendingCoaches = async () => { setLoading(true); try { const q = db.collection('users').where('role', '==', 'coach').where('approved', '==', false); const snapshot = await q.get(); setPendingCoaches(snapshot.docs.map(d => ({ docId: d.id, ...d.data() }))); } catch (error) { setToastMessage('Onay bekleyen koçlar yüklenemedi: ' + error.message, 'error'); } setLoading(false); };
+          const fetchAllCoaches = async () => { setLoading(true); try { const q = db.collection('users').where('role', '==', 'coach').where('approved', '==', true); const snapshot = await q.get(); const coachesList = await Promise.all(snapshot.docs.map(async (d) => { const coach = { docId: d.id, ...d.data() }; const studentsQuery = db.collection('users').where('coachId', '==', coach.uid); const studentsSnapshot = await studentsQuery.get(); coach.studentCount = studentsSnapshot.size; return coach; })); setAllCoaches(coachesList); } catch (error) { setToastMessage('Tüm koçlar yüklenemedi: ' + error.message, 'error'); } setLoading(false); };
+          const handleApprove = async (coach) => { try { await db.collection('users').doc(coach.docId).update({ approved: true }); setToastMessage(`${coach.name} adlı koç onaylandı.`, 'success'); fetchPendingCoaches(); } catch (error) { setToastMessage('Onaylama hatası: ' + error.message, 'error'); } };
+          const handleReject = (coach) => { setModal({ isOpen: true, title: 'Koçu Reddet', message: `'${coach.name}' adlı öğretmeni reddetmek istediğinizden emin misiniz? Bu işlem kullanıcının kaydını silecektir.`, onConfirm: () => confirmReject(coach), onCancel: () => setModal({ isOpen: false }), confirmText: "Reddet ve Sil" }); };
+          const confirmReject = async (coach) => { try { await db.collection('users').doc(coach.docId).delete(); setToastMessage('Koç kaydı reddedildi ve silindi.', 'success'); fetchPendingCoaches(); } catch (error) { setToastMessage('Reddetme hatası: ' + error.message, 'error'); } finally { setModal({ isOpen: false }); } };
+          const handleDeleteCoach = (coach) => { setModal({ isOpen: true, title: 'Koçu Sil', message: `DİKKAT! '${coach.name}' adlı koçu silmek üzeresiniz. Bu işlem geri alınamaz. Bu koça bağlı öğrenciler sahipsiz kalacaktır. Devam edilsin mi?`, onConfirm: () => confirmDeleteCoach(coach), onCancel: () => setModal({ isOpen: false }), confirmText: "Evet, Sil" }); };
+          const confirmDeleteCoach = async (coach) => { try { await db.collection('users').doc(coach.docId).delete(); setToastMessage(`${coach.name} adlı koç silindi.`, 'success'); fetchAllCoaches(); } catch (error) { setToastMessage('Silme hatası: ' + error.message, 'error'); } finally { setModal({ isOpen: false }); } };
+
+          useEffect(() => {
+              if (activeTab === 'pending') fetchPendingCoaches();
+              else if (activeTab === 'allCoaches') fetchAllCoaches();
+          }, [activeTab]);
+
+          if (viewingCoach) {
+              return <CoachDetailView coach={viewingCoach} onBack={() => setViewingCoach(null)} setToastMessage={setToastMessage} />;
+          }
+
+          const renderAdminOnlyContent = () => {
+              if (loading) return <div className="text-center p-10 text-white">Yükleniyor...</div>;
+
+              switch (activeTab) {
+                  case 'pending': return <div className="space-y-4">{pendingCoaches.length > 0 ? pendingCoaches.map(coach => (<div key={coach.docId} className="bg-white/10 p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-3"><div><p className="font-bold text-white">{coach.name}</p><p className="text-sm text-gray-300">{coach.email}</p></div><div className="flex gap-2 self-end md:self-center"><button onClick={() => handleApprove(coach)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Onayla</button><button onClick={() => handleReject(coach)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Reddet</button></div></div>)) : <div className="text-center p-10 text-gray-400">Onay bekleyen koç yok.</div>}</div>;
+                  case 'allCoaches': return <div className="space-y-4">{allCoaches.length > 0 ? allCoaches.map(coach => (<div key={coach.docId} className="bg-white/10 p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-3"><div><p onClick={() => setViewingCoach(coach)} className="font-bold text-white text-lg cursor-pointer hover:text-indigo-300">{coach.name}</p><p className="text-sm text-gray-300">{coach.email}</p><p className="text-xs text-indigo-300 mt-1">{coach.studentCount} öğrenci</p></div>{coach.email !== ADMIN_EMAIL && (<button onClick={() => handleDeleteCoach(coach)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded self-end md:self-center">Koçu Sil</button>)}</div>)) : <div className="text-center p-10 text-gray-400">Sistemde onaylı koç bulunmuyor.</div>}</div>;
+                  default: return null;
+              }
+          }
+
+          return (
+              <div className="w-full max-w-4xl text-white">
+                  <Modal {...modal} />
+                  <div className="flex border-b border-white/20 flex-wrap">
+                      <TabButton tabName="overview" activeTab={activeTab} label="Genel Bakış" onClick={setActiveTab} />
+                      <TabButton tabName="myStudents" activeTab={activeTab} label="Öğrencilerim" onClick={setActiveTab} />
+                      <TabButton tabName="myStats" activeTab={activeTab} label="Haftalık İstatistikler" onClick={setActiveTab} />
+                      <TabButton tabName="pending" activeTab={activeTab} label="Onay Bekleyenler" onClick={setActiveTab} />
+                      <TabButton tabName="allCoaches" activeTab={activeTab} label="Tüm Koçlar" onClick={setActiveTab} />
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-lg rounded-b-xl p-4 md:p-6 min-h-[300px]">
+                       {['overview', 'myStudents', 'myStats'].includes(activeTab) ? (
+                          <CoachContent activeTab={activeTab} userData={userData} setToastMessage={setToastMessage} />
+                      ) : (
+                          renderAdminOnlyContent()
+                      )}
+                  </div>
+              </div>
+          );
+      }
+
+
+      function CoachDetailView({ coach, onBack, setToastMessage }) {
+          const [activeTab, setActiveTab] = useState('students');
+          
+          return (
+              <div className="w-full max-w-4xl text-white">
+                  <button onClick={onBack} className="mb-4 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20">‹ Tüm Koçlara Geri Dön</button>
+                  <h3 className="text-2xl font-bold mb-4">{coach.name} Detayları</h3>
+                   <div className="flex border-b border-white/20 flex-wrap">
+                      <TabButton tabName="students" activeTab={activeTab} label="Öğrenciler" onClick={setActiveTab} />
+                      <TabButton tabName="stats" activeTab={activeTab} label="Haftalık İstatistikler" onClick={setActiveTab} />
+                  </div>
+                   <div className="bg-white/10 backdrop-blur-lg rounded-b-xl p-4 md:p-6 min-h-[300px]">
+                      <CoachContent activeTab={activeTab === 'students' ? 'myStudents' : 'myStats'} userData={coach} setToastMessage={setToastMessage} />
+                  </div>
+              </div>
+          );
+      }
+
+
+      // Ana Uygulama Bileşeni
+      function App() {
+          const [user, setUser] = useState(null);
+          const [userData, setUserData] = useState(null);
+          const [loading, setLoading] = useState(true);
+          const [toast, setToast] = useState({ message: '', type: 'info' });
+
+          useEffect(() => {
+              const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+                  if (firebaseUser) {
+                      const userDocRef = db.collection('users').doc(firebaseUser.uid);
+                      const userDoc = await userDocRef.get();
+
+                      if (userDoc.exists) {
+                          let dbUserData = userDoc.data();
+                          dbUserData.docId = userDoc.id;
+                          dbUserData.dailyGoal = dbUserData.dailyGoal || 100;
+
+                          if (firebaseUser.email === ADMIN_EMAIL) {
+                              dbUserData.role = 'admin';
+                              dbUserData.approved = true;
+                          }
+
+                          if (dbUserData.role === 'coach' && !dbUserData.approved) {
+                              setToastMessage('Hesabınız henüz yönetici tarafından onaylanmadı.', 'error');
+                              await auth.signOut();
+                              setUser(null); setUserData(null);
+                          } 
+                          else { setUser(firebaseUser); setUserData(dbUserData); }
+                      } else {
+                           setToastMessage('Kullanıcı veritabanında bulunamadı.', 'error');
+                           await auth.signOut();
+                           setUser(null); setUserData(null);
+                      }
+                  } else { setUser(null); setUserData(null); }
+                  setLoading(false);
+              });
+              return () => unsubscribe();
+          }, []);
+
+          const setToastMessage = (message, type = 'info') => {
+              setToast({ message, type });
+          };
+
+          const handleSignOut = async () => {
+              await auth.signOut();
+              setUser(null); setUserData(null);
+              setToastMessage('Başarıyla çıkış yapıldı.', 'success');
+          };
+
+          const Header = () => (
+               <div className="bg-white/20 backdrop-blur-lg p-4 rounded-xl mb-8 flex flex-col md:flex-row justify-between items-center w-full max-w-4xl gap-4">
+                  <div className="text-center md:text-left">
+                      <span className="font-bold text-white">{userData.name}</span>
+                      <span className="text-sm text-gray-200 ml-2">({userData.email})</span>
+                      <span className={`ml-3 px-2 py-1 text-xs font-semibold text-white rounded-full ${
+                          userData.role === 'admin' ? 'bg-red-500' :
+                          userData.role === 'coach' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}>
+                          {userData.role.toUpperCase()}
+                      </span>
+                  </div>
+                  <button onClick={handleSignOut} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-semibold w-full md:w-auto">Çıkış</button>
+              </div>
+          );
+
+          const renderDashboard = () => {
+              const dashboards = {
+                  student: <StudentDashboard userData={userData} setUserData={setUserData} setToastMessage={setToastMessage} />,
+                  coach: <CoachDashboard userData={userData} setToastMessage={setToastMessage} />,
+                  admin: <AdminDashboard userData={userData} setToastMessage={setToastMessage} />
+              };
+              return (
+                  <div className="w-full flex flex-col items-center">
+                      <Header />
+                      {dashboards[userData.role] || null}
+                  </div>
+              );
+          };
+          
+          const renderContent = () => {
+              if (loading) { return <div className="text-white text-2xl font-bold">Yükleniyor...</div>; }
+              if (!user || !userData) { return <AuthScreen setToastMessage={setToastMessage} />; }
+              return renderDashboard();
+          };
+
+          return (
+              <div className="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 font-sans bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900">
+                  <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, message: '' })} />
+                  {renderContent()}
+              </div>
+          );
+      }
+
+      const container = document.getElementById('root');
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
     </script>
-</body>
+  </body>
 </html>
+
