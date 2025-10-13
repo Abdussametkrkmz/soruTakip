@@ -1048,32 +1048,62 @@
           const [loading, setLoading] = useState(true);
           const [toast, setToast] = useState({ message: '', type: 'info' });
 
+
           useEffect(() => {
               const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                   if (firebaseUser) {
-                      const userDocRef = db.collection('users').doc(firebaseUser.uid);
-                      const userDoc = await userDocRef.get();
-
+                      let dbUserData = null;
+                      let docId = null;
+                      
+                      // 1. ADIM: Yeni yöntemi dene (Belge ID'si == UID)
+                      const directDocRef = db.collection('users').doc(firebaseUser.uid);
+                      let userDoc = await directDocRef.get();
+          
                       if (userDoc.exists) {
-                          let dbUserData = userDoc.data();
-                          dbUserData.docId = userDoc.id;
+                          // YENİ YAPI: Belge UID ile eşleşiyor
+                          dbUserData = userDoc.data();
+                          docId = userDoc.id;
+                      } else {
+                          // 2. ADIM: Eski yöntemi dene (UID alanıyla koleksiyon sorgusu)
+                          const q = db.collection('users').where('uid', '==', firebaseUser.uid);
+                          const snapshot = await q.get();
+                          
+                          if (!snapshot.empty) {
+                              // ESKİ YAPI: Belge rastgele bir ID'ye sahip
+                              dbUserData = snapshot.docs[0].data();
+                              docId = snapshot.docs[0].id;
+                              
+                              // 💡 OPSİYONEL İYİLEŞTİRME: Eski belgeyi yeni UID'li belgeye taşı ve eskisi sil (migration)
+                              // if (docId !== firebaseUser.uid) {
+                              //    // NOT: Bu kısım eklenirse, tüm eski kullanıcılar tek tek güncellenir.
+                              //    // Ancak basit tutmak için şimdilik bu kısmı yoruma alıyorum.
+                              // }
+                          }
+                      }
+          
+                      // --- GİRİŞ BAŞARISI VE ROL KONTROLÜ ---
+                      if (dbUserData) {
+                          dbUserData.docId = docId; // docId her iki durumda da doğru atanmış olur
                           dbUserData.dailyGoal = dbUserData.dailyGoal || 100;
-
+          
                           if (firebaseUser.email === ADMIN_EMAIL) {
                               dbUserData.role = 'admin';
                               dbUserData.approved = true;
                           }
-
+          
                           if (dbUserData.role === 'coach' && !dbUserData.approved) {
                               setToastMessage('Hesabınız henüz yönetici tarafından onaylanmadı.', 'error');
                               await auth.signOut();
                               setUser(null); setUserData(null);
                           } 
-                          else { setUser(firebaseUser); setUserData(dbUserData); }
+                          else { 
+                              setUser(firebaseUser); 
+                              setUserData(dbUserData); 
+                          }
                       } else {
-                           setToastMessage('Kullanıcı veritabanında bulunamadı.', 'error');
-                           await auth.signOut();
-                           setUser(null); setUserData(null);
+                          setToastMessage('Kullanıcı veritabanında bulunamadı.', 'error');
+                          await auth.signOut();
+                          setUser(null); setUserData(null);
                       }
                   } else { setUser(null); setUserData(null); }
                   setLoading(false);
@@ -1141,4 +1171,5 @@
     </script>
   </body>
 </html>
+
 
